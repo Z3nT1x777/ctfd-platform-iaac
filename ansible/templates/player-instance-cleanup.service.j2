@@ -1,0 +1,9 @@
+[Unit]
+Description=Cleanup expired player challenge instances
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/ctf/orchestrator/player-instance-manager.sh cleanup
+User=root

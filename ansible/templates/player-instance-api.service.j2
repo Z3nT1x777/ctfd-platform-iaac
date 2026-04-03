@@ -1,0 +1,14 @@
+[Unit]
+Description=CTF Player Instance API
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/ctf/orchestrator/player-instance-api.py
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

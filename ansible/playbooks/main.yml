@@ -19,9 +19,62 @@
         name:
           - python3-pip
           - python3-docker
+          - python3
           - docker-compose-plugin
           - git
         state: present
+
+    - name: Create orchestrator directory
+      file:
+        path: /opt/ctf/orchestrator
+        state: directory
+        mode: '0755'
+
+    - name: Deploy player instance manager script
+      copy:
+        src: /vagrant/scripts/player-instance-manager.sh
+        dest: /opt/ctf/orchestrator/player-instance-manager.sh
+        mode: '0755'
+
+    - name: Deploy player instance API script
+      copy:
+        src: /vagrant/scripts/player-instance-api.py
+        dest: /opt/ctf/orchestrator/player-instance-api.py
+        mode: '0755'
+
+    - name: Install player instance API service
+      template:
+        src: ../templates/player-instance-api.service.j2
+        dest: /etc/systemd/system/player-instance-api.service
+        mode: '0644'
+
+    - name: Install player instance cleanup service
+      template:
+        src: ../templates/player-instance-cleanup.service.j2
+        dest: /etc/systemd/system/player-instance-cleanup.service
+        mode: '0644'
+
+    - name: Install player instance cleanup timer
+      template:
+        src: ../templates/player-instance-cleanup.timer.j2
+        dest: /etc/systemd/system/player-instance-cleanup.timer
+        mode: '0644'
+
+    - name: Reload systemd units
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start player instance API service
+      systemd:
+        name: player-instance-api.service
+        enabled: yes
+        state: started
+
+    - name: Enable and start player instance cleanup timer
+      systemd:
+        name: player-instance-cleanup.timer
+        enabled: yes
+        state: started
 
     - name: Create project directories
       file:

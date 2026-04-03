@@ -10,8 +10,8 @@ When TTL expires, the instance is stopped and removed automatically.
 ## Scope of this branch
 
 - Design + PoC CLI manager
-- No CTFd plugin wiring yet
-- Lifecycle commands available from VM shell
+- Implementation layer with local HTTP API
+- Automatic cleanup timer deployed via Ansible/systemd
 
 ## Script
 
@@ -23,6 +23,16 @@ Supported commands:
 - `stop --challenge <name> --team <team-id>`
 - `status`
 - `cleanup`
+
+API path: `scripts/player-instance-api.py`
+
+HTTP endpoints:
+
+- `GET /health`
+- `GET /status`
+- `POST /start`
+- `POST /stop`
+- `POST /cleanup`
 
 ## Runtime model
 
@@ -52,9 +62,26 @@ bash ./scripts/player-instance-manager.sh stop --challenge web-01-test --team te
 - Fixed instance root (`/opt/ctf/instances`) and lease root (`/opt/ctf/leases`).
 - Cleanup only targets managed lease files.
 
-## Next PR (implementation phase)
+## Deployment integration
 
-- Expose manager via a small internal API service.
-- Add a timer/service (systemd or cron) for periodic cleanup.
+Ansible deploys the manager and API in `/opt/ctf/orchestrator` and installs:
+
+- `player-instance-api.service`
+- `player-instance-cleanup.service`
+- `player-instance-cleanup.timer`
+
+After `vagrant provision`, API listens on VM port `8181`.
+
+Example call from host:
+
+```bash
+curl -X POST http://192.168.56.10:8181/start \
+	-H 'Content-Type: application/json' \
+	-d '{"challenge":"web-01-test","team":"team-alpha","ttl_min":60}'
+```
+
+## Next hardening step
+
 - Integrate with CTFd trigger path (plugin or webhook layer).
-- Add audit logs and stronger quota/rate limits.
+- Add audit logs, quotas, and team-level rate limits.
+- Add signed request validation for API callers.

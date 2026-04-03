@@ -1,0 +1,10 @@
+[Unit]
+Description=Run player instance cleanup every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=player-instance-cleanup.service
+
+[Install]
+WantedBy=timers.target
