@@ -42,7 +42,7 @@ def parse_simple_yaml(path: Path) -> Dict[str, str]:
 def find_challenge_dirs(root: Path) -> List[Path]:
     challenge_dirs: List[Path] = []
     for yml in root.rglob("challenge.yml"):
-        if yml.parent.name.startswith("_"):
+        if any(part.startswith("_") for part in yml.parent.parts):
             continue
         challenge_dirs.append(yml.parent)
     return sorted(set(challenge_dirs))
