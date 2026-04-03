@@ -43,19 +43,25 @@ Vagrant.configure("2") do |config|
     # Install Docker Compose plugin
     apt-get install -y docker-compose-plugin
 
-    # Install Ansible and required collections
-    apt-get install -y ansible python3-pip
+    # Install a modern Ansible runtime and required collections
+    apt-get install -y python3-pip
+    python3 -m pip install --upgrade pip ansible
     ansible-galaxy collection install community.docker
 
     echo "✅ Initial provisioning done!"
-    echo "🚀 Next step: Ansible playbook will run automatically"
+    echo "🚀 Base provisioning done"
   SHELL
 
-  # Configure services with Ansible inside the VM
-  config.vm.provision "ansible_local" do |ansible|
-    ansible.install = false
-    ansible.provisioning_path = "/vagrant/ansible"
-    ansible.playbook = "playbooks/main.yml"
-    ansible.inventory_path = "inventory"
-  end
+  # Run Ansible from a non-shared directory to avoid Vagrant/Ansible edge cases
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e
+
+    rm -rf /root/ctf-ansible
+    mkdir -p /root/ctf-ansible
+    cp -a /vagrant/ansible/. /root/ctf-ansible/
+    chmod -R go-w /root/ctf-ansible
+
+    cd /root/ctf-ansible
+    ansible-playbook -i inventory playbooks/main.yml
+  SHELL
 end

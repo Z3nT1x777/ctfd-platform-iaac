@@ -1,9 +1,9 @@
-version: '3.8'
 services:
   ctfd:
     build:
       context: /vagrant/ansible/docker/ctfd
     image: ctfd-custom:{{ ctfd_version }}
+    pull_policy: never
     container_name: ctfd
     restart: unless-stopped
     ports:
@@ -11,7 +11,7 @@ services:
     environment:
       - DATABASE_URL=mysql+pymysql://{{ DB_USER }}:{{ DB_PASSWORD }}@db/{{ DB_NAME }}
       - REDIS_URL=redis://cache:6379
-      - SECRET_KEY=${CTFD_SECRET_KEY}
+      - SECRET_KEY=${CTFD_SECRET_KEY:-change-me}
     volumes:
       - ./ctfd_data:/var/log/CTFd
       - ./ctfd_uploads:/var/uploads
