@@ -1,77 +1,62 @@
-# 🚩 CTF Platform - Infrastructure as Code
+# CTF Platform Infrastructure as Code
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Vagrant](https://img.shields.io/badge/Vagrant-2.4%2B-blue)](https://www.vagrantup.com/)
 [![Ansible](https://img.shields.io/badge/Ansible-2.14%2B-red)](https://www.ansible.com/)
 
-## 📋 Projet
-Plateforme CTF self-hosted complètement automatisée avec isolation Docker par challenge.  
-**Projet M2 Cybersécurité** - Infrastructure as Code & DevSecOps.
+## Overview
 
-### ✨ Caractéristiques
-- 🏗️ **100% Infrastructure as Code** : Vagrant + Ansible
-- 🐳 **Isolation Docker** : Chaque challenge dans son container
-- 🔄 **CI/CD Automatisé** : Pipeline GitLab intégré
-- 📊 **Monitoring** : Prometheus + Grafana
-- 🔐 **Sécurisé** : Isolation réseau, secrets management
+This repository provides an end-to-end Infrastructure as Code setup for a self-hosted CTF platform.
 
-### 🛠️ Stack Technique
-| Composant     | Technologie          |
-|---------------|----------------------|
-| Provisioning  | Vagrant + VirtualBox |
-| Configuration | Ansible              |
-| Runtime       | Docker + Compose     |
-| CTF Platform  | CTFd + Whale plugin  |
-| CI/CD         | GitLab CE            |
-| Monitoring    | Prometheus + Grafana |
+Core capabilities already implemented:
 
-## 🚀 Quick Start
+- Reproducible VM provisioning with Vagrant and Ansible
+- CTFd deployment on Docker Compose
+- Challenge templates by family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
+- Local and CI challenge structure validation
+- Per-team challenge instance orchestration with TTL-based cleanup
+- API authentication and rate limiting for orchestrator control
+- Web UI for orchestrator operations
+- Security preflight checks in CI
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| Provisioning | Vagrant + VirtualBox |
+| Configuration | Ansible |
+| Runtime | Docker + Compose |
+| CTF Platform | CTFd |
+| Validation CI | GitHub Actions |
+| Orchestration | Bash manager + Python API + systemd timer |
+
+## Quick Start
+
 ```bash
-# Clone le repo
 git clone https://github.com/USERNAME/ctf-platform-iaac.git
 cd ctf-platform-iaac
-
-# Configure l'environnement
-cp .env.example .env
-# Édite .env avec tes valeurs
-
-# Lance la VM
-vagrant up
-
-# Attends 10-15 min, puis accède à :
-# CTFd: http://192.168.56.10
-# GitLab: http://192.168.56.10:8080
-# Grafana: http://192.168.56.10:3000
+vagrant up --provision
 ```
 
-## 🧭 Ce qui marche aujourd'hui
+Access points after provisioning:
 
-- `vagrant up` lance la VM et le provisioning.
-- CTFd est accessible depuis l'hote sur `http://localhost:8000` ou `http://192.168.56.10`.
-- La page `/setup` permet de creer le premier compte admin CTFd.
-- Les challenges se preparent a partir de `challenges/_templates/<family>/`.
+- CTFd: http://192.168.56.10
+- CTFd (forwarded): http://localhost:8000
+- Orchestrator UI: http://192.168.56.10:8181/ui
 
-## 🛠️ Ajouter un challenge
+## Challenge Authoring Workflow
 
-Le dossier [challenges/_templates](challenges/_templates) contient les squelettes par famille (`web`, `osint`, `sandbox`, `reverse`, `pwn`).
+Use family templates from [challenges/_templates](challenges/_templates).
 
-Pour un challenge de test sur Windows:
+Windows example:
 
 ```powershell
-Set-Location "C:/Users/Ozen/Documents/ctf-platform-iaac-main/ctf-platform-iaac-main"
 ./scripts/new-challenge.ps1 -Name web-01-test -Family web
 ./scripts/validate-challenge.ps1 -Path challenges/web-01-test
 vagrant ssh -c "cd /vagrant/challenges/web-01-test && docker compose up -d --build"
 ```
 
-Exemple OSINT (sans container):
-
-```powershell
-./scripts/new-challenge.ps1 -Name osint-01-profile -Family osint
-./scripts/validate-challenge.ps1 -Path challenges/osint-01-profile
-```
-
-Pour Linux/macOS:
+Linux/macOS example:
 
 ```bash
 bash ./scripts/new-challenge.sh web-01-test --family web
@@ -79,26 +64,22 @@ bash ./scripts/validate-challenge.sh challenges/web-01-test
 vagrant ssh -c "cd /vagrant/challenges/web-01-test && docker compose up -d --build"
 ```
 
-Guide detaille: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
+Detailed guide: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
 
-## 🔐 Secrets et niveau de securite
+## Security Notes
 
-- `.env` doit rester local et ne jamais etre commit.
-- `ansible/vars/main.yml` contient encore des valeurs de developpement.
-- Pour passer un cap en securite, la prochaine etape est Ansible Vault pour les secrets sensibles.
-- Pour un projet de demo/soutenance, le niveau actuel est acceptable. Pour de la prod, il faut durcir.
+- Keep `.env` local and never commit it.
+- Development defaults may still exist in `ansible/vars/main.yml` depending on environment.
+- Run security preflight checks for pull requests touching sensitive configuration.
+- For strict enforcement in CI or local checks:
 
-## 🚧 Suite logique du projet
+```bash
+SECURITY_STRICT=1 python scripts/security-preflight.py
+```
 
-1. Brancher une vraie gestion des challenges par equipe/joueur avec instance Docker dediee et timer.
-2. Ajouter une couche de validation/CI pour bloquer les challenges invalides.
-3. Etendre le template vers plusieurs familles: web, osint, sandbox, reverse, pwn.
-
-## 📚 Documentation utile
+## Documentation
 
 - [docs/WORKFLOW_PRIORITES.md](docs/WORKFLOW_PRIORITES.md)
 - [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
 - [docs/PLAYER_INSTANCE_ORCHESTRATOR.md](docs/PLAYER_INSTANCE_ORCHESTRATOR.md)
 - [docs/SECURITY_BASELINE.md](docs/SECURITY_BASELINE.md)
-
-Orchestrator UI (team instance start/stop): http://192.168.56.10:8181/ui

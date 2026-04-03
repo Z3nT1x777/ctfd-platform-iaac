@@ -1,12 +1,24 @@
-# Challenge Template
+# Reverse Challenge Template
 
-## How to use
+Use this template for Docker-based reverse engineering challenges.
 
-1. Copy this folder
-2. Rename it
-3. Edit:
-   - challenge.yml
-   - Dockerfile / app.py
-   - docker-compose.yml
-4. Deploy using:
-   docker compose up -d
+## Required Files
+
+- `challenge.yml`
+- `Dockerfile`
+- `docker-compose.yml`
+- challenge artifacts (binary, archive, symbols when applicable)
+- `flag.txt`
+
+## Workflow
+
+1. Generate challenge directory from the reverse template.
+2. Add challenge artifacts and execution logic.
+3. Validate challenge structure.
+4. Start challenge in VM and verify expected solving flow.
+
+## Runtime Notes
+
+- Keep binaries and dependencies deterministic.
+- Document challenge objective and expected output in metadata.
+- Verify that runtime configuration matches distributed artifacts.

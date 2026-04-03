@@ -1,14 +1,19 @@
-# OSINT Challenge Template
+# OSINT Template
 
-Use this template for non-container challenges.
+Use this template for `static` OSINT challenges that do not require container runtime.
 
-## Expected content
+## Required Files
 
-- challenge.yml with metadata and flag
-- A statement in this README describing context and expected deliverable
-- Optional files under docs/ or resources/
+- `challenge.yml` with complete metadata
+- `README.md` with challenge statement, expected deliverables, and submission format
 
-## Notes
+## Optional Assets
 
-- No Docker container is required for type `static`.
-- Keep all public resources reproducible.
+- Files under `resources/` or `docs/`
+- Public intelligence datasets, screenshots, or archive material
+
+## Authoring Notes
+
+- Ensure all provided material is reproducible and versioned.
+- Keep challenge instructions precise and verification criteria explicit.
+- Validate challenge structure before commit.
