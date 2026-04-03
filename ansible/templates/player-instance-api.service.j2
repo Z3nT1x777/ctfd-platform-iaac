@@ -9,6 +9,16 @@ ExecStart=/usr/bin/python3 /opt/ctf/orchestrator/player-instance-api.py
 Restart=always
 RestartSec=3
 User=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
 
 [Install]
 WantedBy=multi-user.target
