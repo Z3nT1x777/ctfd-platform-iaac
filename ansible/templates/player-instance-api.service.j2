@@ -5,6 +5,7 @@ Requires=docker.service
 
 [Service]
 Type=simple
+EnvironmentFile=/etc/ctf/orchestrator.env
 ExecStart=/usr/bin/python3 /opt/ctf/orchestrator/player-instance-api.py
 Restart=always
 RestartSec=3

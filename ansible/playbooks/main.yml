@@ -30,17 +30,34 @@
         state: directory
         mode: '0755'
 
+    - name: Create orchestrator config directory
+      file:
+        path: /etc/ctf
+        state: directory
+        mode: '0700'
+
     - name: Deploy player instance manager script
       copy:
         src: /vagrant/scripts/player-instance-manager.sh
         dest: /opt/ctf/orchestrator/player-instance-manager.sh
         mode: '0755'
 
+    - name: Normalize manager script line endings
+      shell: sed -i 's/\r$//' /opt/ctf/orchestrator/player-instance-manager.sh
+      args:
+        executable: /bin/bash
+
     - name: Deploy player instance API script
       copy:
         src: /vagrant/scripts/player-instance-api.py
         dest: /opt/ctf/orchestrator/player-instance-api.py
         mode: '0755'
+
+    - name: Deploy orchestrator environment file
+      template:
+        src: ../templates/orchestrator.env.j2
+        dest: /etc/ctf/orchestrator.env
+        mode: '0600'
 
     - name: Install player instance API service
       template:

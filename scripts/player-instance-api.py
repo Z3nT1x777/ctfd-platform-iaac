@@ -1,12 +1,39 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import collections
 import json
+import os
 import subprocess
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 
 MANAGER = "/opt/ctf/orchestrator/player-instance-manager.sh"
+API_TOKEN = os.environ.get("ORCHESTRATOR_API_TOKEN", "")
+RATE_LIMIT_PER_MIN = int(os.environ.get("ORCHESTRATOR_RATE_LIMIT_PER_MIN", "60"))
+API_BIND = os.environ.get("ORCHESTRATOR_API_BIND", "0.0.0.0")
+API_PORT = int(os.environ.get("ORCHESTRATOR_API_PORT", "8181"))
+
+_rate_lock = threading.Lock()
+_rate_state: dict[str, collections.deque[float]] = {}
+
+
+def is_rate_limited(client_id: str) -> bool:
+    now = time.time()
+    window_start = now - 60.0
+
+    with _rate_lock:
+        bucket = _rate_state.setdefault(client_id, collections.deque())
+        while bucket and bucket[0] < window_start:
+            bucket.popleft()
+
+        if len(bucket) >= RATE_LIMIT_PER_MIN:
+            return True
+
+        bucket.append(now)
+        return False
 
 UI_HTML = """<!doctype html>
 <html>
@@ -152,6 +179,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _get_client_id(self) -> str:
+        return self.headers.get("X-Forwarded-For") or self.client_address[0]
+
+    def _is_authorized(self) -> bool:
+        if not API_TOKEN:
+            return True
+
+        header = self.headers.get("Authorization", "")
+        if header.startswith("Bearer "):
+            token = header.split(" ", 1)[1].strip()
+            return token == API_TOKEN
+
+        token = self.headers.get("X-Orchestrator-Token", "")
+        return token == API_TOKEN
+
     def _json_response(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
@@ -173,6 +215,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/health":
             self._json_response(200, {"status": "ok"})
             return
+
+        if not self._is_authorized():
+            self._json_response(401, {"ok": False, "error": "unauthorized"})
+            return
+
+        if is_rate_limited(self._get_client_id()):
+            self._json_response(429, {"ok": False, "error": "rate_limit_exceeded"})
+            return
+
         if path == "/status":
             code, out, err = run_manager(["status"])
             payload = {"ok": code == 0, "stdout": out, "stderr": err}
@@ -181,6 +232,14 @@ class Handler(BaseHTTPRequestHandler):
         self._json_response(404, {"error": "not found"})
 
     def do_POST(self) -> None:
+        if not self._is_authorized():
+            self._json_response(401, {"ok": False, "error": "unauthorized"})
+            return
+
+        if is_rate_limited(self._get_client_id()):
+            self._json_response(429, {"ok": False, "error": "rate_limit_exceeded"})
+            return
+
         path = urlparse(self.path).path
         data = self._read_json()
 
@@ -216,7 +275,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    server = HTTPServer(("0.0.0.0", 8181), Handler)
+    server = HTTPServer((API_BIND, API_PORT), Handler)
     server.serve_forever()
 
 
