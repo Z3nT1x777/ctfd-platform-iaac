@@ -19,12 +19,9 @@
         name:
           - python3-pip
           - python3-docker
+          - docker-compose-plugin
           - git
         state: present
-    - name: Install docker-compose python module (required by Ansible)
-      pip:
-        name: docker-compose
-        executable: pip3
 
     - name: Create project directories
       file:
@@ -47,7 +44,7 @@
 #        - monitoring
 
     - name: Start CTFd
-      community.docker.docker_compose:
+      community.docker.docker_compose_v2:
         project_src: /opt/ctf/ctfd
         state: present
 

@@ -26,6 +26,8 @@ Vagrant.configure("2") do |config|
 
   # Initial provisioning (base installation)
   config.vm.provision "shell", inline: <<-SHELL
+    export DEBIAN_FRONTEND=noninteractive
+
     # Update system
     apt-get update
     apt-get upgrade -y
@@ -38,16 +40,22 @@ Vagrant.configure("2") do |config|
     sh get-docker.sh
     usermod -aG docker vagrant
 
-    # Install Docker Compose
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$$   (uname -s)-   $$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+    # Install Docker Compose plugin
+    apt-get install -y docker-compose-plugin
 
-    # Install Ansible
-    apt-get install -y software-properties-common
-    add-apt-repository --yes --update ppa:ansible/ansible
-    apt-get install -y ansible
+    # Install Ansible and required collections
+    apt-get install -y ansible python3-pip
+    ansible-galaxy collection install community.docker
 
     echo "✅ Initial provisioning done!"
-    echo "🚀 Next step: vagrant ssh then cd /vagrant/ansible"
+    echo "🚀 Next step: Ansible playbook will run automatically"
   SHELL
+
+  # Configure services with Ansible inside the VM
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.install = false
+    ansible.provisioning_path = "/vagrant/ansible"
+    ansible.playbook = "playbooks/main.yml"
+    ansible.inventory_path = "inventory"
+  end
 end
