@@ -21,8 +21,25 @@
           - python3-docker
           - python3
           - docker-compose-plugin
+          - nginx
           - git
         state: present
+
+    - name: Load optional vaulted overrides
+      include_vars:
+        file: ../vars/vault.yml
+        name: vault_overrides
+      failed_when: false
+      no_log: true
+
+    - name: Build effective secret values
+      set_fact:
+        db_root_password_effective: "{{ vault_overrides.DB_ROOT_PASSWORD | default(DB_ROOT_PASSWORD) }}"
+        db_password_effective: "{{ vault_overrides.DB_PASSWORD | default(DB_PASSWORD) }}"
+        orchestrator_api_token_effective: "{{ vault_overrides.orchestrator_api_token | default(orchestrator_api_token) }}"
+        orchestrator_signing_secret_effective: "{{ vault_overrides.orchestrator_signing_secret | default(orchestrator_signing_secret) }}"
+        orchestrator_ctfd_webhook_token_effective: "{{ vault_overrides.orchestrator_ctfd_webhook_token | default(orchestrator_ctfd_webhook_token) }}"
+      no_log: true
 
     - name: Create orchestrator directory
       file:
@@ -35,6 +52,12 @@
         path: /etc/ctf
         state: directory
         mode: '0700'
+
+    - name: Create orchestrator audit log directory
+      file:
+        path: /var/log/ctf
+        state: directory
+        mode: '0750'
 
     - name: Deploy player instance manager script
       copy:
@@ -77,6 +100,27 @@
         dest: /etc/systemd/system/player-instance-cleanup.timer
         mode: '0644'
 
+    - name: Install orchestrator nginx reverse proxy
+      template:
+        src: ../templates/orchestrator-api.nginx.conf.j2
+        dest: /etc/nginx/sites-available/orchestrator-api.conf
+        mode: '0644'
+
+    - name: Enable orchestrator nginx site
+      file:
+        src: /etc/nginx/sites-available/orchestrator-api.conf
+        dest: /etc/nginx/sites-enabled/orchestrator-api.conf
+        state: link
+
+    - name: Disable default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Validate nginx configuration
+      command: nginx -t
+      changed_when: false
+
     - name: Reload systemd units
       systemd:
         daemon_reload: yes
@@ -84,6 +128,12 @@
     - name: Enable and restart player instance API service
       systemd:
         name: player-instance-api.service
+        enabled: yes
+        state: restarted
+
+    - name: Enable and restart nginx
+      systemd:
+        name: nginx
         enabled: yes
         state: restarted
 

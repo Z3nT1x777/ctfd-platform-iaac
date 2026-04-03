@@ -34,6 +34,7 @@ HTTP endpoints:
 - `POST /start`
 - `POST /stop`
 - `POST /cleanup`
+- `POST /ctfd/event`
 
 Authentication:
 
@@ -44,6 +45,22 @@ Rate limiting:
 
 - in-memory limit per client (IP / forwarded IP)
 - configured by `ORCHESTRATOR_RATE_LIMIT_PER_MIN`
+
+Team controls:
+
+- team-level request rate limiting (`ORCHESTRATOR_TEAM_RATE_LIMIT_PER_MIN`)
+- maximum active instances per team (`ORCHESTRATOR_TEAM_MAX_ACTIVE`)
+
+Request signing:
+
+- optional HMAC-SHA256 verification for API callers
+- headers: `X-Signature-Timestamp`, `X-Signature`
+- signature input: `<timestamp>.<raw_request_body>`
+
+Audit logging:
+
+- JSON line log entries written to `ORCHESTRATOR_AUDIT_LOG`
+- includes action, client address, team, challenge, and HTTP status
 
 ## Runtime model
 
@@ -81,7 +98,7 @@ Ansible deploys the manager and API in `/opt/ctf/orchestrator` and installs:
 - `player-instance-cleanup.service`
 - `player-instance-cleanup.timer`
 
-After `vagrant provision`, API listens on VM port `8181`.
+After `vagrant provision`, the API listens on localhost and is exposed through nginx on VM port `8181`.
 
 UI:
 
@@ -97,8 +114,12 @@ curl -X POST http://192.168.56.10:8181/start \
 	-d '{"challenge":"web-01-test","team":"team-alpha","ttl_min":60}'
 ```
 
-## Next hardening step
+## CTFd trigger integration
 
-- Integrate with CTFd trigger path (plugin or webhook layer).
-- Add audit logs, quotas, and team-level rate limits.
-- Add signed request validation for API callers.
+`POST /ctfd/event` can be used by a CTFd plugin or webhook bridge.
+
+Supported event mapping:
+
+- `challenge.start`, `instance.start`, `start` -> start instance
+- `challenge.stop`, `instance.stop`, `stop` -> stop instance
+- `cleanup`, `instance.cleanup` -> cleanup expired instances

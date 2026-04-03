@@ -16,6 +16,13 @@ DB_PASSWORD: "CTFdPassword123!"
 
 # Orchestrator API security (change token outside demo environments)
 orchestrator_api_token: "ChangeMe-Orchestrator-Token"
+orchestrator_signing_secret: "ChangeMe-Orchestrator-Signing-Secret"
+orchestrator_ctfd_webhook_token: "ChangeMe-CTFd-Webhook-Token"
 orchestrator_rate_limit_per_min: 60
-orchestrator_api_bind: "0.0.0.0"
-orchestrator_api_port: 8181
+orchestrator_team_rate_limit_per_min: 30
+orchestrator_team_max_active: 3
+orchestrator_signature_ttl_sec: 300
+orchestrator_audit_log: "/var/log/ctf/orchestrator-audit.log"
+orchestrator_api_bind: "127.0.0.1"
+orchestrator_api_port: 18181
+orchestrator_proxy_listen_port: 8181

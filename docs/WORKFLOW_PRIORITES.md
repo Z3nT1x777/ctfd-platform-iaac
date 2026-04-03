@@ -65,6 +65,9 @@ Checklist PR:
 ## P3 - Durcissement securite
 Objectif: aligner l'infra avec un niveau M2 solide.
 
-1. Migrer les credentials de `ansible/vars/main.yml` vers Ansible Vault.
-2. Definir une politique de rotation des secrets `.env`.
-3. Ajouter un job CI de validation de structure des challenges.
+Statut actuel:
+
+1. Support Ansible Vault ajoute via `ansible/vars/vault.yml` (override des defaults).
+2. Security preflight CI en place (`.github/workflows/security-preflight.yml`).
+3. API orchestrator renforcee: signature HMAC, quotas par equipe, rate limiting, logs d'audit.
+4. Trigger CTFd disponible via endpoint `POST /ctfd/event`.

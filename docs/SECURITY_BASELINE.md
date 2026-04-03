@@ -6,8 +6,14 @@ This repository currently targets a demo/training deployment model.
 
 - Orchestrator API service runs with stricter systemd sandbox options.
 - Orchestrator API token is externalized through `/etc/ctf/orchestrator.env`.
-- API rate-limiting support is available in runtime configuration.
+- API request signing is supported with HMAC-SHA256.
+- API rate-limiting supports both client-level and team-level limits.
+- Team active-instance quota is enforced before start actions.
+- Centralized audit logging is written to `/var/log/ctf/orchestrator-audit.log`.
+- CTFd webhook trigger endpoint is available at `/ctfd/event`.
+- API now binds on localhost and is exposed through an nginx reverse proxy.
 - Security preflight workflow runs on PRs touching security-related files.
+- Vault-based secret overrides are supported through `ansible/vars/vault.yml`.
 
 ## Security preflight
 
@@ -24,10 +30,9 @@ Strict mode:
 SECURITY_STRICT=1 python scripts/security-preflight.py
 ```
 
-## Recommended next hardening steps
+## Operational requirements
 
-1. Move sensitive vars to Ansible Vault.
-2. Rotate default credentials before shared/staging deployments.
-3. Restrict orchestrator API bind to localhost and expose through a controlled proxy if needed.
-4. Add request signing and per-team quotas.
-5. Add centralized audit logging for start/stop/cleanup actions.
+1. Create `ansible/vars/vault.yml` from `ansible/vars/vault.example.yml`.
+2. Encrypt the vault file with Ansible Vault and provide the vault password during deployment.
+3. Rotate all development defaults before any shared/staging/production use.
+4. Configure CI preflight in strict mode for protected branches.

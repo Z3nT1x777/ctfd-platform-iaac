@@ -1,0 +1,12 @@
+# Copy this file to ansible/vars/vault.yml and encrypt it with Ansible Vault.
+# Example:
+#   cp ansible/vars/vault.example.yml ansible/vars/vault.yml
+#   ansible-vault encrypt ansible/vars/vault.yml
+#
+# These values override defaults from ansible/vars/main.yml when vault.yml exists.
+
+DB_ROOT_PASSWORD: "REPLACE_ME"
+DB_PASSWORD: "REPLACE_ME"
+orchestrator_api_token: "REPLACE_ME"
+orchestrator_signing_secret: "REPLACE_ME"
+orchestrator_ctfd_webhook_token: "REPLACE_ME"
