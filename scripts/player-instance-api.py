@@ -11,7 +11,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 MANAGER = "/opt/ctf/orchestrator/player-instance-manager.sh"
 API_TOKEN = os.environ.get("ORCHESTRATOR_API_TOKEN", "")
@@ -24,6 +24,7 @@ TEAM_MAX_ACTIVE = int(os.environ.get("ORCHESTRATOR_TEAM_MAX_ACTIVE", "3"))
 AUDIT_LOG_PATH = os.environ.get("ORCHESTRATOR_AUDIT_LOG", "/var/log/ctf/orchestrator-audit.log")
 CTFD_WEBHOOK_TOKEN = os.environ.get("ORCHESTRATOR_CTFD_WEBHOOK_TOKEN", "")
 SIGNATURE_TTL_SEC = int(os.environ.get("ORCHESTRATOR_SIGNATURE_TTL_SEC", "300"))
+UI_REQUIRE_TOKEN = os.environ.get("ORCHESTRATOR_UI_REQUIRE_TOKEN", "1") == "1"
 
 _rate_lock = threading.Lock()
 _rate_state: dict[str, collections.deque[float]] = {}
@@ -355,8 +356,21 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def do_GET(self) -> None:
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path in ["/", "/ui"]:
+            if UI_REQUIRE_TOKEN and API_TOKEN:
+                query = parse_qs(parsed.query)
+                query_token = ""
+                if "token" in query and query["token"]:
+                    query_token = str(query["token"][0]).strip()
+
+                header_token = self.headers.get("X-Orchestrator-Token", "").strip()
+                if header_token != API_TOKEN and query_token != API_TOKEN:
+                    self._audit_http("unauthorized_ui", 401, path, detail="missing_or_invalid_ui_token")
+                    self._json_response(401, {"ok": False, "error": "unauthorized"})
+                    return
+
             self._html_response(200, UI_HTML)
             return
 
