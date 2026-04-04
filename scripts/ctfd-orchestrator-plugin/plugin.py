@@ -195,7 +195,7 @@ class OrchestrationPlugin:
 
         @bp.route("/start", methods=["POST"])
         @authed_only
-        @require_team(redirect_url="/challenges")
+        @require_team
         def start_instance(team_id=None):
             """
             Start a challenge instance for current team.
@@ -369,7 +369,7 @@ class OrchestrationPlugin:
 
         @bp.route("/stop", methods=["POST"])
         @authed_only
-        @require_team(redirect_url="/challenges")
+        @require_team
         def stop_instance(team_id=None):
             """Stop a running challenge instance."""
             try:
@@ -441,7 +441,7 @@ class OrchestrationPlugin:
 
         @bp.route("/instances", methods=["GET"])
         @authed_only
-        @require_team(redirect_url="/challenges")
+        @require_team
         def list_instances(team_id=None):
             """List all active instances for current team."""
             try:
@@ -481,7 +481,7 @@ class OrchestrationPlugin:
 
         @bp.route("/challenges", methods=["GET"])
         @authed_only
-        @require_team(redirect_url="/challenges")
+        @require_team
         def list_challenges(team_id=None):
             """List available challenges for quick start UI."""
             items = Challenges.query.order_by(Challenges.id.asc()).all()
@@ -513,7 +513,7 @@ class OrchestrationPlugin:
 
         @bp.route("/ui", methods=["GET"])
         @authed_only
-        @require_team(redirect_url="/challenges")
+        @require_team
         def ops_ui(team_id=None):
             """Simple CTFd-side operations UI with start/stop and live TTL."""
             return render_template_string(UI_TEMPLATE)
