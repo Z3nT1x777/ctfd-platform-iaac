@@ -245,6 +245,16 @@ def sync_challenge(
     connection_mode: str,
     dry_run: bool,
 ) -> str:
+    # First, determine if this is a new or existing challenge
+    action = "create"
+    challenge_id: int
+    if spec.name in existing:
+        action = "update"
+        challenge_id = int(existing[spec.name]["id"])
+    else:
+        challenge_id = -1  # Will be filled after creation
+    
+    # Now generate connection_info with the challenge_id if we have it
     connection_info = ""
     if connection_mode == "static-port" and spec.port is not None and instance_base_url:
         connection_info = f"{instance_base_url.rstrip('/')}:{spec.port}"
@@ -254,11 +264,16 @@ def sync_challenge(
             f"(challenge: {spec.name})"
         )
     elif connection_mode == "launch-link" and instance_base_url:
-        quoted = quote(spec.name, safe="")
-        connection_info = (
-            f"Launch your team instance: "
-            f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge={quoted}"
-        )
+        # For new challenges, we'll update connection_info after creation
+        # For existing challenges, we can use the known challenge_id
+        if challenge_id > 0:
+            # Known challenge ID - use button link directly
+            connection_info = (
+                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/btn/{challenge_id}?ttl_min=60"
+            )
+        else:
+            # New challenge - will be updated after creation
+            connection_info = "[updating after creation]"
 
     challenge_payload: dict[str, Any] = {
         "name": spec.name,
@@ -270,14 +285,6 @@ def sync_challenge(
         "connection_info": connection_info,
     }
 
-    action = "create"
-    challenge_id: int
-    if spec.name in existing:
-        action = "update"
-        challenge_id = int(existing[spec.name]["id"])
-    else:
-        challenge_id = -1
-
     if dry_run:
         print(f"[dry-run] {action} challenge '{spec.name}' ({spec.path})")
         return action
@@ -285,6 +292,19 @@ def sync_challenge(
     if action == "create":
         created = api_request(session, "POST", base_url, "/api/v1/challenges", challenge_payload)
         challenge_id = int(created["data"]["id"])
+        
+        # For launch-link mode on new challenges, update with correct button link
+        if connection_mode == "launch-link" and instance_base_url:
+            updated_connection_info = (
+                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/btn/{challenge_id}?ttl_min=60"
+            )
+            api_request(
+                session,
+                "PATCH",
+                base_url,
+                f"/api/v1/challenges/{challenge_id}",
+                {"connection_info": updated_connection_info},
+            )
     else:
         api_request(
             session,

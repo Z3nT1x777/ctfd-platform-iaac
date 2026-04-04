@@ -617,6 +617,219 @@ class OrchestrationPlugin:
 """
             return html
 
+        @bp.route("/btn/<int:challenge_id>", methods=["GET"])
+        def launch_button_page(challenge_id):
+            """
+            Clickable launch button for players (no auth required for button page).
+            Returns HTML with a launch button that POST to /start endpoint.
+            Query params (optional): ttl_min (default 60), auto_redirect=true
+            """
+            ttl_min_raw = str(request.args.get("ttl_min", "60")).strip()
+            ttl_min = int(ttl_min_raw) if ttl_min_raw.isdigit() else 60
+            auto_redirect = request.args.get("auto_redirect", "").lower() == "true"
+
+            challenge = Challenges.query.get(challenge_id)
+            if not challenge:
+                return "Challenge not found", 404
+
+            html = f"""
+<!doctype html>
+<html>
+<head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Launch {challenge.name}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ 
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .container {{
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+        }}
+        h2 {{
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 28px;
+        }}
+        .ch-name {{
+            color: #667eea;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }}
+        p {{
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }}
+        .settings {{
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: left;
+        }}
+        .form-group {{
+            margin-bottom: 12px;
+        }}
+        label {{
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }}
+        input[type="number"] {{
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }}
+        input[type="number"]:focus {{
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }}
+        .btn {{
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 12px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }}
+        .btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }}
+        .btn:active {{
+            transform: translateY(0);
+        }}
+        .loading {{ display: none; }}
+        .btn.loading {{
+            opacity: 0.7;
+            cursor: not-allowed;
+        }}
+        .loading-text {{ margin-left: 8px; }}
+        .error {{
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+            display: none;
+        }}
+        .success {{
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+            display: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class=\"container\">
+        <h2>Ready to start?</h2>
+        <div class=\"ch-name\">{challenge.name}</div>
+        <p>Click the button below to launch your personal instance</p>
+        
+        <div class=\"settings\">
+            <div class=\"form-group\">
+                <label for=\"ttl\">Time to Live (minutes):</label>
+                <input type=\"number\" id=\"ttl\" value=\"{ttl_min}\" min=\"5\" max=\"240\" />
+            </div>
+        </div>
+
+        <button class=\"btn\" id=\"launchBtn\" onclick=\"launchInstance()\">
+            <span id=\"btnText\">Launch Challenge</span>
+            <span class=\"loading\" id=\"btnLoading\"><span class=\"spinner\">⏳</span><span class=\"loading-text\">Launching...</span></span>
+        </button>
+
+        <div class=\"error\" id=\"errorMsg\"></div>
+        <div class=\"success\" id=\"successMsg\"></div>
+
+        <p style=\"margin-top: 24px; font-size: 12px; color: #999;\">
+            Your instance will be available for the specified TTL duration.
+        </p>
+    </div>
+
+    <script>
+        async function launchInstance() {{
+            const ttl = Number(document.getElementById('ttl').value || 60);
+            const btn = document.getElementById('launchBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            if (ttl < 5 || ttl > 240) {{
+                errorMsg.textContent = 'TTL must be between 5 and 240 minutes';
+                errorMsg.style.display = 'block';
+                return;
+            }}
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+
+            try {{
+                const response = await fetch('/plugins/orchestrator/start', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ challenge_id: {challenge_id}, ttl_min: ttl }})
+                }});
+
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {{
+                    throw new Error(data.error || 'Launch failed');
+                }}
+
+                successMsg.textContent = 'Instance launched successfully! Redirecting...';
+                successMsg.style.display = 'block';
+
+                setTimeout(() => {{
+                    window.location.href = data.instance.url;
+                }}, 2000);
+
+            }} catch (error) {{
+                errorMsg.textContent = 'Error: ' + error.message;
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }}
+        }}
+
+        // Optional: Support auto-redirect on page load
+        {'window.onload = () => { launchInstance(); };' if auto_redirect else '// Manual launch button only'}
+    </script>
+</body>
+</html>
+"""
+            return html
+
         @bp.route("/ui", methods=["GET"])
         @authed_only
         @require_team
