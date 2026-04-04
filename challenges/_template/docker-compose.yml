@@ -1,9 +1,0 @@
-version: "3.8"
-
-services:
-  challenge:
-    build: .
-    container_name: challenge-name
-    ports:
-      - "5000:5000"
-    restart: unless-stopped
