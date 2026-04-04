@@ -15,7 +15,7 @@ from typing import Any
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, render_template_string
-from CTFd.models import Challenges, Teams
+from CTFd.models import Challenges, Teams, db
 from CTFd.utils.decorators import authed_only, require_team
 from CTFd.utils.user import get_current_user
 
@@ -895,7 +895,6 @@ class OrchestrationPlugin:
                         ch.connection_info = button_url
                         synced += 1
 
-                from CTFd.models import db
                 db.session.commit()
 
                 logger.info(f"Sync completed: updated {synced}/{len(challenges)} challenges with button links")
