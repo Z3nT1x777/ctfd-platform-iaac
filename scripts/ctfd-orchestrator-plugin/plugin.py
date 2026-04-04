@@ -10,6 +10,7 @@ Handles challenge instance lifecycle:
 
 import logging
 import os
+import re
 import time
 from typing import Any
 from urllib.parse import quote
@@ -600,11 +601,46 @@ class OrchestrationPlugin:
                 "port": result.get("port"),
                 "expire_epoch": result.get("expire_epoch"),
             }
+            
+            # Some successful starts can return human-readable stdout only
+            # (e.g. "Instance already running") without structured fields.
+            url = str(result.get("url") or "").strip()
+            port = result.get("port")
+            expires = int(result.get("expire_epoch", int(time.time())))
+            stdout = str(result.get("stdout", ""))
+
+            if (not url or url.endswith(":0")) and stdout:
+                m_url = re.search(r"URL\s*:\s*(https?://[^\s]+)", stdout)
+                if m_url:
+                    url = m_url.group(1)
+
+            if (not port or int(port or 0) == 0) and url:
+                m_port = re.search(r":(\d+)$", url)
+                if m_port:
+                    port = int(m_port.group(1))
+
+            # Fallback to tracked active instance for this challenge/team.
+            if not url or url.endswith(":0") or expires <= int(time.time()):
+                for inst in self.instance_tracker.get_team_instances(str(team_id)):
+                    if int(inst.get("challenge_id", -1)) == int(challenge.id):
+                        url = str(inst.get("url") or url)
+                        expires = int(inst.get("expire_epoch", expires))
+                        port = int(inst.get("port", port or 0))
+                        break
+
+            instance_data["url"] = url
+            instance_data["port"] = port
+            instance_data["expire_epoch"] = expires
             self.instance_tracker.add_instance(instance_data)
 
-            url = result.get("url") or ""
-            expires = int(result.get("expire_epoch", int(time.time())))
             remaining = max(0, expires - int(time.time()))
+
+            if not url or url.endswith(":0"):
+                return (
+                    "Launch completed but instance URL is unavailable. "
+                    "This challenge might require non-web access (e.g. SSH) or missing runtime port mapping.",
+                    500,
+                )
 
             html = f"""
 <!doctype html>
