@@ -8,6 +8,13 @@
 *.swo
 *~
 
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
 # Ansible
 *.retry
 .ansible/
