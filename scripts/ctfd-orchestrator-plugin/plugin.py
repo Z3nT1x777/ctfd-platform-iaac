@@ -265,8 +265,21 @@ class OrchestrationPlugin:
             try:
                 data = request.get_json() or {}
                 challenge_id = data.get("challenge_id")
-                ttl_min = int(data.get("ttl_min", 60))
+                ttl_min_raw = data.get("ttl_min", 60)
+                ttl_min = int(ttl_min_raw)
                 team_id = self._resolve_team_id()
+
+                if ttl_min < 5 or ttl_min > 240:
+                    return (
+                        jsonify(
+                            {
+                                "ok": False,
+                                "error": "invalid_ttl",
+                                "detail": "ttl_min must be between 5 and 240 minutes",
+                            }
+                        ),
+                        400,
+                    )
 
                 if not team_id:
                     return jsonify({"ok": False, "error": "team_not_found"}), 401
@@ -563,6 +576,9 @@ class OrchestrationPlugin:
             ttl_min_raw = str(request.args.get("ttl_min", "60")).strip()
             ttl_min = int(ttl_min_raw) if ttl_min_raw.isdigit() else 60
 
+            if ttl_min < 5 or ttl_min > 240:
+                return "Invalid timer: ttl_min must be between 5 and 240 minutes", 400
+
             challenge = None
             if challenge_id and str(challenge_id).isdigit():
                 challenge = Challenges.query.get(int(challenge_id))
@@ -817,14 +833,30 @@ class OrchestrationPlugin:
                 <a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a>
             </div>
 
-            <p class=\"tiny\">Auto-redirecting in <span id=\"countdown\">2</span>s...</p>
+            <p class="tiny">Auto-redirecting in <span id="countdown">8</span>s... <a href="#" id="stayHere" style="color:#9ad1ff; margin-left:6px;">stay here</a></p>
         </div>
     </section>
 
     <script>
-        let n = 2;
+        let n = 8;
+        let cancelled = false;
         const el = document.getElementById('countdown');
+        const stayLink = document.getElementById('stayHere');
+
+        stayLink.addEventListener('click', (ev) => {{
+            ev.preventDefault();
+            cancelled = true;
+            el.textContent = 'paused';
+            stayLink.textContent = 'auto-redirect paused';
+            stayLink.style.pointerEvents = 'none';
+            stayLink.style.opacity = '0.8';
+        }});
+
         const timer = setInterval(() => {{
+            if (cancelled) {{
+                clearInterval(timer);
+                return;
+            }}
             n -= 1;
             if (n <= 0) {{
                 clearInterval(timer);
