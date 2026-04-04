@@ -738,16 +738,25 @@ class OrchestrationPlugin:
 
             remaining = max(0, expires - int(time.time()))
             team_label = str(team_id)
-            if str(team_id).isdigit():
+            # Try to get team name from current user's team object first (most direct)
+            try:
+                user = get_current_user()
+                if user:
+                    user_team = getattr(user, "team", None)
+                    if user_team:
+                        team_name = getattr(user_team, "name", None)
+                        if team_name:
+                            team_label = str(team_name)
+            except Exception:
+                pass
+            # Fallback: query Teams if not found via user
+            if team_label == str(team_id) and str(team_id).isdigit():
                 try:
                     team_obj = Teams.query.get(int(team_id))
                     if team_obj:
-                        # Try common team name attributes
-                        for attr in ["name", "team_name", "title"]:
-                            name = getattr(team_obj, attr, None)
-                            if name:
-                                team_label = str(name)
-                                break
+                        team_name = getattr(team_obj, "name", None)
+                        if team_name:
+                            team_label = str(team_name)
                 except Exception:
                     pass
 
