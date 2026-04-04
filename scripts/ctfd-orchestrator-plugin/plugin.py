@@ -178,7 +178,7 @@ class OrchestrationPlugin:
         self.app = app
         self.orchestrator_handler = OrchestratorWebhookHandler(
             api_url=os.getenv(
-                "ORCHESTRATOR_API_URL", "http://127.0.0.1:8181"
+                "ORCHESTRATOR_API_URL", "http://host.docker.internal:8181"
             ),
             api_token=os.getenv("ORCHESTRATOR_API_TOKEN", ""),
             signing_secret=os.getenv("ORCHESTRATOR_SIGNING_SECRET", ""),
