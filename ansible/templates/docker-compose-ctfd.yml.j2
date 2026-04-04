@@ -24,6 +24,7 @@ services:
       - ./ctfd_uploads:/var/uploads
       - /var/run/docker.sock:/var/run/docker.sock
       - /vagrant/scripts/ctfd-orchestrator-plugin:/opt/CTFd/CTFd/plugins/ctfd_orchestrator_plugin
+      - /vagrant/challenges:/vagrant/challenges:ro
     depends_on:
       - db
       - cache
