@@ -175,9 +175,20 @@ cmd_start() {
   lease_file=$(lease_file_for "$challenge" "$team")
 
   if [[ -f "$lease_file" ]]; then
-    echo "Lease already exists for challenge=$challenge team=$team"
-    echo "Run stop first if you want to recreate it"
-    exit 1
+    # shellcheck disable=SC1090
+    source "$lease_file"
+
+    if sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" ps --status running --services 2>/dev/null | grep -q .; then
+      echo "Instance already running"
+      echo "Project : $PROJECT"
+      echo "URL     : http://192.168.56.10:${PORT}"
+      echo "Expires : $(date -d "@${EXPIRES_EPOCH}" '+%Y-%m-%d %H:%M:%S')"
+      return 0
+    fi
+
+    # Stale lease: cleanup and recreate.
+    sudo rm -rf "$INSTANCE_DIR"
+    sudo rm -f "$lease_file"
   fi
 
   sudo rm -rf "$instance_dir"
