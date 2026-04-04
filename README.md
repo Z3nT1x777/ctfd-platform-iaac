@@ -135,7 +135,7 @@ SECURITY_STRICT=1 python scripts/security-preflight.py
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [docs/WORKFLOW_PRIORITES.md](docs/WORKFLOW_PRIORITES.md) | Project roadmap by priority level (P1-P3), current implementation status | Project leads, contributors |
+| [docs/WORKFLOW_PRIORITES.md](docs/WORKFLOW_PRIORITES.md) | Project roadmap by priority level (P0-P3) plus template-scoped next steps | Project leads, contributors |
 | [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md) | Challenge authoring and deployment workflow, template structure, validation rules | CTF authors, challenge creators |
 | [docs/PLAYER_INSTANCE_ORCHESTRATOR.md](docs/PLAYER_INSTANCE_ORCHESTRATOR.md) | Orchestrator API reference, endpoints, HMAC request signing, team quotas, audit logs | Developers, DevOps, API consumers |
 | [docs/SECURITY_BASELINE.md](docs/SECURITY_BASELINE.md) | Security hardening controls, attack surface analysis, implemented defenses | Security engineers, auditors |

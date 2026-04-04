@@ -384,18 +384,34 @@ done
 
 ---
 
-## Next Steps Beyond P3
+## Template-Focused Next Steps
 
-Possible future enhancements (not yet prioritized):
+The following items are good fits for this repository because they improve the CTF template, authoring workflow, or local challenge runtime without turning the project into a production platform.
 
-- **Multi-team tournaments:** Scoreboard, live leaderboards, team submissions
-- **Challenge auto-generation:** Create challenges from code templates
-- **Advanced analytics:** Challenge difficulty metrics, time-to-solve distributions
-- **Discord/Slack integration:** Real-time notifications on challenge completions
-- **Kubernetes deployment:** Scale from VirtualBox to cloud (AWS, Azure, GCP)
-- **Advanced monitoring:** Prometheus/Grafana for infrastructure metrics
-- **SAML/LDAP auth:** Enterprise user directory integration
-- **Backup/restore:** Automated challenge instance snapshots
+### Recommended for this repo
+
+- **Template metadata standardization:** Make `challenge.yml` support explicit access hints such as `connection_mode`, `ssh_user`, and `access_instructions`.
+- **Template-aware launch rendering:** Keep the CTFd launch page aligned with the actual access mode, not just the challenge family.
+- **Sample challenge library:** Add more runnable examples for web, SSH/VM, and instruction-only/OSINT challenges.
+- **Challenge scaffolding helpers:** Improve create/validate scripts so new challenges are generated with correct metadata and runtime files.
+- **Validation coverage:** Add stricter linting for challenge metadata, port mappings, and missing runtime files.
+- **Documentation sync:** Keep README files, template docs, and example challenges aligned with the current supported patterns.
+- **Non-web access examples:** Document SSH and instruction-based challenge delivery explicitly so authors do not force web links everywhere.
+
+### Out of scope for this template repo
+
+These are valid platform ideas, but they are product/production concerns and should not be prioritized here unless the repository scope changes:
+
+- **Multi-team tournaments:** scoreboard, live leaderboard, team submissions
+- **Challenge auto-generation from code templates** at platform scale
+- **Advanced analytics:** difficulty metrics, time-to-solve distributions
+- **Discord/Slack notifications** for completions
+- **Kubernetes deployment** and cloud orchestration
+- **Advanced monitoring** for platform operations
+- **SAML/LDAP auth** enterprise identity integration
+- **Backup/restore** for production snapshots
+
+If the goal is to keep this repository as a reusable CTF template, the recommended focus is authoring ergonomics, validation, and access-mode coherence rather than production platform services.
 
 ---
 
