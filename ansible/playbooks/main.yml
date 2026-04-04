@@ -161,11 +161,22 @@
       loop:
         - ctfd
 #        - gitlab
-#        - monitoring
+        - monitoring
 
     - name: Start CTFd
       community.docker.docker_compose_v2:
         project_src: /opt/ctf/ctfd
+        state: present
+
+    - name: Copy Prometheus config
+      template:
+        src: "../templates/prometheus.yml.j2"
+        dest: "/opt/ctf/monitoring/prometheus.yml"
+        mode: '0644'
+
+    - name: Start monitoring stack
+      community.docker.docker_compose_v2:
+        project_src: /opt/ctf/monitoring
         state: present
 
     - name: Wait for CTFd to be ready

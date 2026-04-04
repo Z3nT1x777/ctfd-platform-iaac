@@ -25,6 +25,151 @@ from .instance_tracker import InstanceTracker
 
 logger = logging.getLogger("ctfd.orchestrator_plugin")
 
+UI_TEMPLATE = """
+<!doctype html>
+<html>
+<head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>CTFd Instance Ops</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
+        .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        input, select, button { padding: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; }
+        code { background: #f6f6f6; padding: 2px 6px; border-radius: 4px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <h1>CTFd Player Instance Control</h1>
+    <p>Start or stop team instances, see TTL countdown, and follow live team activity.</p>
+    <div class=\"grid\">
+        <div class=\"card\">
+            <h3>Instance Controls</h3>
+            <div class=\"row\">
+                <select id=\"challenge\"></select>
+                <input id=\"ttl\" type=\"number\" value=\"60\" min=\"5\" max=\"240\" />
+            </div>
+            <div class=\"row\">
+                <button id=\"startBtn\">Start Challenge</button>
+                <button id=\"stopBtn\">Stop Challenge</button>
+                <button id=\"refreshBtn\">Refresh</button>
+            </div>
+            <div id=\"message\"></div>
+            <h4>Team Active Instances</h4>
+            <table>
+                <thead><tr><th>Challenge</th><th>URL</th><th>TTL</th></tr></thead>
+                <tbody id=\"instances\"></tbody>
+            </table>
+        </div>
+        <div class=\"card\">
+            <h3>Live Activity Leaderboard</h3>
+            <table>
+                <thead><tr><th>Rank</th><th>Team</th><th>Active</th><th>Starts</th><th>Stops</th><th>Expired</th></tr></thead>
+                <tbody id=\"leaderboard\"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const fmt = (sec) => {
+            if (sec <= 0) return 'expired';
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}m ${s}s`;
+        };
+
+        async function fetchChallenges() {
+            const res = await fetch('/plugins/orchestrator/challenges');
+            const data = await res.json();
+            const sel = document.getElementById('challenge');
+            sel.innerHTML = '';
+            (data.challenges || []).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.id} - ${c.name}`;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function startInstance() {
+            const challenge_id = Number(document.getElementById('challenge').value);
+            const ttl_min = Number(document.getElementById('ttl').value || 60);
+            const res = await fetch('/plugins/orchestrator/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ challenge_id, ttl_min })
+            });
+            const data = await res.json();
+            document.getElementById('message').textContent = data.ok
+                ? `Instance started at ${data.instance.url}`
+                : `Error: ${data.error || 'unknown'}`;
+            await refreshInstances();
+            await refreshLeaderboard();
+        }
+
+        async function stopInstance() {
+            const challenge_id = Number(document.getElementById('challenge').value);
+            const res = await fetch('/plugins/orchestrator/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ challenge_id })
+            });
+            const data = await res.json();
+            document.getElementById('message').textContent = data.ok
+                ? 'Instance stopped'
+                : `Error: ${data.error || 'unknown'}`;
+            await refreshInstances();
+            await refreshLeaderboard();
+        }
+
+        async function refreshInstances() {
+            const res = await fetch('/plugins/orchestrator/instances');
+            const data = await res.json();
+            const body = document.getElementById('instances');
+            body.innerHTML = '';
+            (data.instances || []).forEach(inst => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${inst.challenge_name || '-'}</td><td><a href="${inst.url}" target="_blank">${inst.url}</a></td><td>${fmt(inst.ttl_remaining_sec || 0)}</td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        async function refreshLeaderboard() {
+            const res = await fetch('/plugins/orchestrator/leaderboard/live');
+            const data = await res.json();
+            const body = document.getElementById('leaderboard');
+            body.innerHTML = '';
+            (data.rows || []).forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${idx + 1}</td><td>${row.team_name || row.team_id}</td><td>${row.active_instances}</td><td>${row.starts_total}</td><td>${row.stops_total}</td><td>${row.expired_total}</td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startInstance);
+        document.getElementById('stopBtn').addEventListener('click', stopInstance);
+        document.getElementById('refreshBtn').addEventListener('click', async () => {
+            await refreshInstances();
+            await refreshLeaderboard();
+        });
+
+        fetchChallenges();
+        refreshInstances();
+        refreshLeaderboard();
+        setInterval(async () => {
+            await refreshInstances();
+            await refreshLeaderboard();
+        }, 10000);
+    </script>
+</body>
+</html>
+"""
+
 
 class OrchestrationPlugin:
     """Main plugin class for CTFd orchestrator integration."""
@@ -333,6 +478,45 @@ class OrchestrationPlugin:
                     ),
                     500,
                 )
+
+        @bp.route("/challenges", methods=["GET"])
+        @authed_only
+        @require_team(redirect_url="/challenges")
+        def list_challenges(team_id=None):
+            """List available challenges for quick start UI."""
+            items = Challenges.query.order_by(Challenges.id.asc()).all()
+            return jsonify(
+                {
+                    "ok": True,
+                    "challenges": [
+                        {"id": ch.id, "name": ch.name}
+                        for ch in items
+                    ],
+                }
+            )
+
+        @bp.route("/leaderboard/live", methods=["GET"])
+        @authed_only
+        def live_leaderboard():
+            """Real-time activity leaderboard from instance lifecycle events."""
+            rows = self.instance_tracker.leaderboard()
+            team_ids = [r["team_id"] for r in rows]
+            names = {
+                str(t.id): t.name
+                for t in Teams.query.filter(Teams.id.in_(team_ids)).all()
+            } if team_ids else {}
+
+            for row in rows:
+                row["team_name"] = names.get(str(row["team_id"]), str(row["team_id"]))
+
+            return jsonify({"ok": True, "rows": rows})
+
+        @bp.route("/ui", methods=["GET"])
+        @authed_only
+        @require_team(redirect_url="/challenges")
+        def ops_ui(team_id=None):
+            """Simple CTFd-side operations UI with start/stop and live TTL."""
+            return render_template_string(UI_TEMPLATE)
 
         self.app.register_blueprint(bp)
 

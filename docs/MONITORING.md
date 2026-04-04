@@ -2,7 +2,7 @@
 
 **Purpose:** Enable Prometheus metrics collection and Grafana dashboards for CTF infrastructure visibility during tournament operations.
 
-**Status:** ✅ Infrastructure ready, optional feature (commented out by default to reduce dev complexity)
+**Status:** ✅ Enabled by default in provisioning (Prometheus + Grafana + Node Exporter + cAdvisor)
 
 ---
 
@@ -23,47 +23,9 @@ This enables real-time visibility of:
 
 ---
 
-## Quick Start: Enable Monitoring
+## Quick Start: Start Monitoring
 
-### Step 1: Uncomment in Ansible Playbook
-
-Edit `ansible/playbooks/main.yml`:
-
-```yaml
-- name: Create docker-compose directories
-  file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0755'
-  loop:
-    - /opt/ctf
-    - /opt/ctf/ctfd
-    - /opt/ctf/gitlab
-    - /opt/ctf/monitoring    # Already created ✓
-
-- name: Copy docker-compose files
-  template:
-    src: "../templates/docker-compose-{{ item }}.yml.j2"
-    dest: "/opt/ctf/{{ item }}/docker-compose.yml"
-  loop:
-    - ctfd
-    # - gitlab        # ← Uncomment if using GitLab
-    # - monitoring    # ← UNCOMMENT THIS LINE FOR MONITORING
-```
-
-Change to:
-
-```yaml
-- name: Copy docker-compose files
-  template:
-    src: "../templates/docker-compose-{{ item }}.yml.j2"
-    dest: "/opt/ctf/{{ item }}/docker-compose.yml"
-  loop:
-    - ctfd
-    - monitoring    # ← ENABLED
-```
-
-### Step 2: Re-provision VM
+### Step 1: Re-provision VM
 
 ```bash
 vagrant provision
@@ -71,10 +33,11 @@ vagrant provision
 
 This will:
 - Deploy `docker-compose-monitoring.yml` to `/opt/ctf/monitoring/`
+- Deploy `prometheus.yml` to `/opt/ctf/monitoring/prometheus.yml`
 - Start Prometheus, Grafana, Node Exporter, cAdvisor containers
 - Expose metrics on ports 9090 (Prometheus), 3000 (Grafana)
 
-### Step 3: Access Dashboards
+### Step 2: Access Dashboards
 
 After provisioning (wait 10-15 seconds for services to start):
 
