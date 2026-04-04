@@ -585,7 +585,12 @@ class OrchestrationPlugin:
             )
 
             if not result.get("ok"):
-                return f"Launch failed: {result.get('error', 'orchestrator_error')}", 500
+                error_code = result.get("error", "orchestrator_error")
+                detail = str(result.get("detail", "")).strip()
+                msg = f"Launch failed: {error_code}"
+                if detail:
+                    msg += f"\n\nDetail: {detail}"
+                return msg, 500
 
             instance_data = {
                 "team_id": str(team_id),
