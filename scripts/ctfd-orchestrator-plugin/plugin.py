@@ -739,9 +739,17 @@ class OrchestrationPlugin:
             remaining = max(0, expires - int(time.time()))
             team_label = str(team_id)
             if str(team_id).isdigit():
-                team_obj = Teams.query.get(int(team_id))
-                if team_obj and getattr(team_obj, "name", None):
-                    team_label = str(team_obj.name)
+                try:
+                    team_obj = Teams.query.get(int(team_id))
+                    if team_obj:
+                        # Try common team name attributes
+                        for attr in ["name", "team_name", "title"]:
+                            name = getattr(team_obj, attr, None)
+                            if name:
+                                team_label = str(name)
+                                break
+                except Exception:
+                    pass
 
             access_methods = self._build_access_methods(challenge, url, port, stdout)
             if not access_methods:
