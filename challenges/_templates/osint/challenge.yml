@@ -2,7 +2,9 @@ name: Challenge Name
 category: osint
 value: 100
 type: static
-
+connection_mode: instruction
+access_instructions: |
+  Investigate public artifacts and submit the flag.
 description: |
   Investigate public artifacts and submit the flag.
 

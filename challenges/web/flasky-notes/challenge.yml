@@ -2,7 +2,8 @@ name: web-flasky-notes
 category: web
 value: 100
 type: docker
-
+connection_mode: web
+container_port: 5000
 description: |
   Reflected template injection style challenge based on user note rendering.
 

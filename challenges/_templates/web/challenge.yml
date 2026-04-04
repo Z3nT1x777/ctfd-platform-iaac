@@ -2,7 +2,8 @@ name: Challenge Name
 category: web
 value: 100
 type: docker
-
+connection_mode: web
+container_port: 5000
 description: |
   Short description of the challenge.
   Explain the goal, not the solution.

@@ -1,0 +1,15 @@
+name: SSH Lab
+category: sandbox
+value: 100
+type: docker
+container_port: 22
+connection_mode: ssh
+ssh_user: ctf
+access_instructions: |
+  Connect over SSH using the command shown in CTFd.
+  The container exposes an SSH service on the host port defined in docker-compose.yml.
+description: |
+  A small SSH-based challenge used to demonstrate non-web access rendering.
+  Players must connect over SSH and inspect the environment to retrieve the flag.
+flag: CTF{ssh_lab_template_flag}
+port: 5003

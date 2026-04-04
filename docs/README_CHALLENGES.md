@@ -11,8 +11,8 @@ Challenge templates are maintained in [challenges/_templates](../challenges/_tem
 | Family | Type | Use Case | Example |
 |--------|------|----------|---------|
 | `web` | Docker | Web applications, login forms, SQL injection | `challenges/web/simple-login/` |
-| `osint` | Static | OSINT, RECON tasks, documents | `challenges/osint/metadata-hunt/` |
-| `sandbox` | Docker | Isolated environments, VMs, system challenges | `challenges/sandbox/linux-basics/` |
+| `osint` | Static | OSINT, RECON tasks, documents | `challenges/osint/eiffel-shadow/` |
+| `sandbox` | Docker | Isolated environments, VMs, system challenges, SSH labs | `challenges/sandbox/ssh-lab/` |
 | `reverse` | Docker | Reverse engineering, binary analysis | `challenges/reverse/simple-exe/` |
 | `pwn` | Docker | Exploitation, buffer overflows, ROP | `challenges/pwn/basic-overflow/` |
 
@@ -244,6 +244,10 @@ CI will automatically:
 | `authors` | list | ✓ | Challenge creators |
 | `tags` | list | ✓ | Tags for filtering/searching |
 | `instance` | object | ✓ | Deployment config (see below) |
+| `connection_mode` | string | optional | `web`, `ssh`, `instruction`, or `auto` for launch-card rendering |
+| `ssh_user` | string | optional | Username used to render SSH commands |
+| `access_instructions` | string | optional | Human-readable instructions for static/instruction-only challenges |
+| `container_port` | integer | optional | Internal container port when it is not the default `5000` |
 
 ### instance.type = "docker-compose"
 

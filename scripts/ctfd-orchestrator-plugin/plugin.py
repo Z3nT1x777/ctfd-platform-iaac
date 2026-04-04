@@ -15,7 +15,7 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, render_template_string
@@ -25,6 +25,7 @@ from CTFd.utils.user import get_current_user
 
 from .webhook_handler import OrchestratorWebhookHandler
 from .instance_tracker import InstanceTracker
+from .access_profiles import build_access_methods, load_access_hint_from_dir, normalize_slug
 
 logger = logging.getLogger("ctfd.orchestrator_plugin")
 
@@ -189,7 +190,7 @@ class OrchestrationPlugin:
             webhook_token=os.getenv("ORCHESTRATOR_WEBHOOK_TOKEN", ""),
         )
         self.instance_tracker = InstanceTracker()
-        self._challenge_dir_cache: dict[str, Optional[str]] = {}
+        self._challenge_dir_cache: Dict[str, Optional[str]] = {}
         self._register_routes()
         logger.info("CTFd Orchestrator Plugin initialized")
 
@@ -245,103 +246,27 @@ class OrchestrationPlugin:
             return False
         return (Path(challenge_dir) / "docker-compose.yml").exists()
 
-    def _challenge_access_hint(self, challenge) -> dict[str, str]:
+    def _challenge_access_hint(self, challenge) -> Dict[str, str]:
         """Read lightweight access hints from challenge.yml when available."""
-        mode = "auto"
-        ssh_user = ""
-        instructions = ""
+        challenge_dir = self._resolve_challenge_dir_from_name(str(getattr(challenge, "name", "") or ""))
+        return load_access_hint_from_dir(challenge_dir) if challenge_dir else {"mode": "auto", "ssh_user": "", "instructions": "", "container_port": "", "type": ""}
 
+    def _build_access_methods(self, challenge, url: str, port: Any, stdout: str) -> List[Dict[str, str]]:
+        """Build access methods for front-end rendering without hardcoding challenge categories."""
         challenge_dir = self._resolve_challenge_dir_from_name(str(getattr(challenge, "name", "") or ""))
         if not challenge_dir:
-            return {"mode": mode, "ssh_user": ssh_user, "instructions": instructions}
+            return []
 
-        yml_path = Path(challenge_dir) / "challenge.yml"
-        if not yml_path.exists():
-            return {"mode": mode, "ssh_user": ssh_user, "instructions": instructions}
-
-        try:
-            yml_text = yml_path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            return {"mode": mode, "ssh_user": ssh_user, "instructions": instructions}
-
-        m_mode = re.search(r"^(?:connection_mode|access_mode):\s*([a-zA-Z_-]+)\s*$", yml_text, flags=re.MULTILINE)
-        if m_mode:
-            mode = m_mode.group(1).strip().lower()
-
-        m_user = re.search(r"^ssh_user:\s*([^\n]+)$", yml_text, flags=re.MULTILINE)
-        if m_user:
-            ssh_user = m_user.group(1).strip().strip('"\'')
-
-        m_instr = re.search(r"^access_instructions:\s*([^\n]+)$", yml_text, flags=re.MULTILINE)
-        if m_instr:
-            instructions = m_instr.group(1).strip().strip('"\'')
-
-        return {"mode": mode, "ssh_user": ssh_user, "instructions": instructions}
-
-    def _build_access_methods(self, challenge, url: str, port: Any, stdout: str) -> list[dict[str, str]]:
-        """Build access methods for front-end rendering without hardcoding challenge categories."""
-        hints = self._challenge_access_hint(challenge)
-        mode = hints.get("mode", "auto") or "auto"
-        ssh_user = hints.get("ssh_user") or os.getenv("ORCHESTRATOR_SSH_USER", "ctf")
-        host = os.getenv("ORCHESTRATOR_PLAYER_HOST", "192.168.56.10")
-
-        connection_info = str(getattr(challenge, "connection_info", "") or "").strip()
-        raw_note = hints.get("instructions") or connection_info
-        low_blob = f"{connection_info}\n{stdout}".lower()
-
-        try:
-            port_num = int(port or 0)
-        except Exception:
-            port_num = 0
-
-        web_url = str(url or "").strip()
-        if not web_url and port_num > 0:
-            web_url = f"http://{host}:{port_num}"
-
-        methods: list[dict[str, str]] = []
-
-        def add_web(target_url: str) -> None:
-            if target_url and not any(m.get("type") == "web" for m in methods):
-                methods.append({"type": "web", "label": "Open in Browser", "value": target_url})
-
-        def add_ssh(target_port: int) -> None:
-            if target_port <= 0 or any(m.get("type") == "ssh" for m in methods):
-                return
-            methods.append(
-                {
-                    "type": "ssh",
-                    "label": "SSH Command",
-                    "linux": f"ssh {ssh_user}@{host} -p {target_port}",
-                    "windows": f"ssh {ssh_user}@{host} -p {target_port}",
-                }
-            )
-
-        def add_instruction(note: str) -> None:
-            note_text = (note or "").strip()
-            if note_text and not any(m.get("type") == "instruction" for m in methods):
-                methods.append({"type": "instruction", "label": "Instructions", "value": note_text})
-
-        if mode == "web":
-            add_web(web_url)
-        elif mode == "ssh":
-            add_ssh(port_num)
-            if not methods:
-                add_instruction(raw_note or "SSH challenge: runtime metadata is missing host/port.")
-        elif mode == "instruction":
-            add_instruction(raw_note or "Follow challenge instructions in CTFd.")
-        else:
-            # Auto mode: infer from runtime outputs and challenge metadata.
-            wants_ssh = "ssh" in low_blob or "-p " in connection_info.lower()
-            if wants_ssh:
-                add_ssh(port_num)
-                if not methods:
-                    add_instruction(raw_note or "SSH challenge: use your terminal to connect.")
-            elif web_url:
-                add_web(web_url)
-            else:
-                add_instruction(raw_note or "Instance launched. Check challenge description for access details.")
-
-        return methods
+        return build_access_methods(
+            challenge_name=str(getattr(challenge, "name", "") or ""),
+            challenge_dir=challenge_dir,
+            connection_info=str(getattr(challenge, "connection_info", "") or "").strip(),
+            url=str(url or "").strip(),
+            port=port,
+            stdout=str(stdout or ""),
+            player_host=os.getenv("ORCHESTRATOR_PLAYER_HOST", "192.168.56.10"),
+            default_ssh_user=os.getenv("ORCHESTRATOR_SSH_USER", "ctf"),
+        )
 
     def _resolve_team_id(self) -> str:
         """Resolve current user's team id in a CTFd-version-tolerant way."""

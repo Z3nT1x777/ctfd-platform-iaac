@@ -169,6 +169,8 @@ SECURITY_STRICT=1 python scripts/security-preflight.py
 
 **Challenges (Updated):**
 - New warmup challenge: `challenges/web/simple-login/` for testing orchestrator deployment
+- New SSH/VM example: `challenges/sandbox/ssh-lab/` with explicit SSH access rendering
+- New instruction-only OSINT example: `challenges/osint/eiffel-shadow/`
 - Support for arbitrary Docker Compose services (not limited to specific languages)
 - Per-team isolation via orchestrator port mapping
 

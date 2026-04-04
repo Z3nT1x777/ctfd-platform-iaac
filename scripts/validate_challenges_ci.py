@@ -20,6 +20,7 @@ DOCKER_REQUIRED_FILES = [
 ]
 PORT_MIN = 5001
 PORT_MAX = 5999
+DEFAULT_CONTAINER_PORT = 5000
 
 
 def read_text(path: Path) -> str:
@@ -90,14 +91,19 @@ def validate_challenge(path: Path, used_ports: Dict[int, Path]) -> List[str]:
             else:
                 used_ports[port] = path
 
-            compose_file = path / "docker-compose.yml"
-            if compose_file.exists():
-                compose = read_text(compose_file)
-                expected_mapping = f'"{port}:5000"'
-                if expected_mapping not in compose:
-                    errors.append(
-                        f"{rel}: docker-compose.yml must expose {expected_mapping}"
-                    )
+            container_port_str = data.get("container_port", str(DEFAULT_CONTAINER_PORT))
+            if not container_port_str.isdigit():
+                errors.append(f"{rel}: container_port must be numeric when defined")
+            else:
+                container_port = int(container_port_str)
+                compose_file = path / "docker-compose.yml"
+                if compose_file.exists():
+                    compose = read_text(compose_file)
+                    expected_mapping = f'"{port}:{container_port}"'
+                    if expected_mapping not in compose:
+                        errors.append(
+                            f"{rel}: docker-compose.yml must expose {expected_mapping}"
+                        )
 
     return errors
 

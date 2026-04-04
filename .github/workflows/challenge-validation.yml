@@ -28,3 +28,6 @@ jobs:
 
       - name: Validate challenge structure
         run: python scripts/validate_challenges_ci.py
+
+      - name: Run access-profile non-regression tests
+        run: python scripts/test_access_profiles.py

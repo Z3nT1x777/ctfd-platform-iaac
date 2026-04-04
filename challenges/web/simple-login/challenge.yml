@@ -4,6 +4,8 @@ difficulty: Easy
 points: 50
 value: 50
 type: docker
+connection_mode: web
+container_port: 5000
 description: |
   A simple web authentication challenge. Login with correct credentials to reveal the flag.
   This is a warmup challenge for basic web security concepts.
