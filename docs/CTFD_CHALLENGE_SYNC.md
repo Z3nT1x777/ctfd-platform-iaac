@@ -40,7 +40,9 @@ Flag source priority:
 CTFd mapping:
 - challenge `type`: `standard`
 - challenge `state`: default `visible` (override with `--state hidden`)
-- `connection_info`: `<instance-base-url>:<port>` when `port` exists
+- `connection_info` default: one-click launch URL (`/plugins/orchestrator/launch?challenge=...`)
+- optional admin UI mode: `--connection-mode orchestrator-ui`
+- optional direct mode: `<instance-base-url>:<port>` with `--connection-mode static-port`
 
 ## Get CTFd API token
 
@@ -74,6 +76,30 @@ python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
   --api-token <YOUR_ADMIN_TOKEN> \
   --state hidden
+
+### 4. Optional: admin UI links instead of one-click launch
+
+```bash
+python scripts/sync_challenges_ctfd.py \
+  --ctfd-url http://192.168.56.10 \
+  --api-token <YOUR_ADMIN_TOKEN> \
+  --state visible \
+  --connection-mode orchestrator-ui \
+  --orchestrator-ui-url http://192.168.56.10/plugins/orchestrator/ui
+```
+
+### 5. Optional: static direct links (`ip:port`)
+
+Use this only if your challenge containers are permanently up on fixed ports.
+
+```bash
+python scripts/sync_challenges_ctfd.py \
+  --ctfd-url http://192.168.56.10 \
+  --api-token <YOUR_ADMIN_TOKEN> \
+  --state visible \
+  --connection-mode static-port \
+  --instance-base-url http://192.168.56.10
+```
 ```
 
 ## Environment variables (optional)
@@ -100,6 +126,9 @@ Recommended:
 - If a challenge already exists by name, script updates it.
 - Script upserts one canonical static flag per challenge.
 - If API token is invalid/missing, script exits with explicit error.
+- `points` key is supported as fallback when `value` is absent.
+- `instance.ports` mappings like `"5000:5000"` are parsed when top-level `port` is missing.
+- `/plugins/orchestrator/ui` is intended for admin/dev operations, while players should use one-click launch links in challenge connection info.
 
 ## Troubleshooting
 

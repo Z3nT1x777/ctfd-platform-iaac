@@ -46,9 +46,19 @@ class InstanceTracker:
             }
         """
         team_id = str(instance_data.get("team_id"))
+        challenge_id = instance_data.get("challenge_id")
         with self._lock:
             if team_id not in self._instances:
                 self._instances[team_id] = []
+
+            # Replace existing entry for same challenge to keep tracker consistent.
+            if challenge_id is not None:
+                self._instances[team_id] = [
+                    inst
+                    for inst in self._instances[team_id]
+                    if inst.get("challenge_id") != challenge_id
+                ]
+
             self._instances[team_id].append(instance_data)
             self._ensure_stats(team_id)["starts_total"] += 1
             logger.debug(

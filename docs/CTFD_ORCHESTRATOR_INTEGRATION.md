@@ -14,6 +14,10 @@ Instead of admins manually launching challenge instances via the `/ui` dashboard
 4. **Multiple players** can launch instances of same challenge simultaneously
 5. **Per-team quotas enforced** (max 3 concurrent by default)
 
+Important role split:
+- **Players**: use one-click launch link from challenge card (`/plugins/orchestrator/launch?...`)
+- **Admin/Dev only**: orchestrator operations dashboard (`/plugins/orchestrator/ui`) requires token
+
 ---
 
 ## Architecture Overview
@@ -127,6 +131,14 @@ vagrant ssh -c "sudo docker logs ctfd | grep -i orchestrator"
 # Expected output:
 > [ctfd.orchestrator_plugin] CTFd Orchestrator Plugin initialized
 ```
+
+### Accessing Admin/Dev Ops UI
+
+Orchestrator UI is protected by token by default.
+
+Use:
+
+`http://192.168.56.10:8181/ui?token=<ORCHESTRATOR_API_TOKEN>`
 
 ### Test in CTFd UI
 

@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 from typing import Dict, Any, Optional
 
@@ -181,19 +182,35 @@ class OrchestratorWebhookHandler:
         Format:
         CHALLENGE=web-01 TEAM_ID=1 PROJECT=web_01_team_1 PORT=6100 EXPIRE_EPOCH=1234567890
         """
-        parsed = {}
+        parsed: Dict[str, Any] = {}
         for line in stdout.split("\n"):
             line = line.strip()
             if not line:
                 continue
+
+            # Human-readable format fallback:
+            # URL     : http://192.168.56.10:6100
+            if line.lower().startswith("url") and ":" in line:
+                url_val = line.split(":", 1)[1].strip()
+                if url_val:
+                    parsed["url"] = url_val
+                    m = re.search(r":(\d+)$", url_val)
+                    if m:
+                        parsed["port"] = m.group(1)
+
             for kv in line.split():
                 if "=" in kv:
                     k, v = kv.split("=", 1)
                     parsed[k.lower()] = v
 
+        port = int(parsed.get("port", 0)) if str(parsed.get("port", "0")).isdigit() else 0
+        url = str(parsed.get("url", "")).strip()
+        if not url:
+            url = f"http://192.168.56.10:{port}"
+
         # Map to standard response fields
         return {
-            "port": int(parsed.get("port", 0)),
-            "url": f"http://192.168.56.10:{parsed.get('port', 0)}",
-            "expire_epoch": int(parsed.get("expire_epoch", 0)),
+            "port": port,
+            "url": url,
+            "expire_epoch": int(parsed.get("expire_epoch", 0)) if str(parsed.get("expire_epoch", "0")).isdigit() else 0,
         }

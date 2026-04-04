@@ -52,6 +52,37 @@ ensure_dirs() {
   sudo mkdir -p "$INSTANCES_ROOT" "$LEASES_ROOT"
 }
 
+resolve_challenge_dir() {
+  local challenge="$1"
+  local base="/vagrant/challenges"
+  local direct="$base/$challenge"
+
+  if [[ -d "$direct" && -f "$direct/challenge.yml" ]]; then
+    echo "$direct"
+    return 0
+  fi
+
+  local yml dir
+  while IFS= read -r -d '' yml; do
+    dir=$(dirname "$yml")
+    local folder
+    folder=$(basename "$dir")
+    if [[ "$(sanitize "$folder")" == "$challenge" ]]; then
+      echo "$dir"
+      return 0
+    fi
+
+    local yml_name
+    yml_name=$(grep -E '^name:' "$dir/challenge.yml" | sed -E 's/^name:[[:space:]]*//' | tr -d '"\r' | head -1 || true)
+    if [[ -n "$yml_name" && "$(sanitize "$yml_name")" == "$challenge" ]]; then
+      echo "$dir"
+      return 0
+    fi
+  done < <(find "$base" -type f -name challenge.yml -print0 2>/dev/null)
+
+  return 1
+}
+
 write_lease() {
   local lease_file="$1"
   local challenge="$2"
@@ -99,9 +130,9 @@ cmd_start() {
     exit 1
   fi
 
-  local challenge_dir="/vagrant/challenges/$challenge"
-  if [[ ! -d "$challenge_dir" ]]; then
-    echo "Challenge folder not found: $challenge_dir"
+  local challenge_dir=""
+  if ! challenge_dir=$(resolve_challenge_dir "$challenge"); then
+    echo "Challenge folder not found for challenge=$challenge under /vagrant/challenges"
     exit 1
   fi
 
@@ -112,12 +143,16 @@ cmd_start() {
 
   local challenge_type
   challenge_type=$(grep -E '^type:' "$challenge_dir/challenge.yml" | awk '{print $2}' | tr -d '\r' | head -1 || true)
-  if [[ "$challenge_type" != "docker" ]]; then
-    echo "Only docker challenges can be spawned with this manager"
+  # Some CTFd challenge metadata may use non-docker type labels while still
+  # providing a valid docker-compose runtime. Prefer runtime files over metadata.
+  if [[ "$challenge_type" != "docker" && ! -f "$challenge_dir/docker-compose.yml" ]]; then
+    echo "Challenge is not spawnable: missing docker-compose.yml"
     exit 1
   fi
 
   ensure_dirs
+
+  local docker_compose=(sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose)
 
   if [[ -z "$port" ]]; then
     port=$(find_free_port) || { echo "No free port found in ${PORT_MIN}-${PORT_MAX}"; exit 1; }
@@ -140,9 +175,20 @@ cmd_start() {
   lease_file=$(lease_file_for "$challenge" "$team")
 
   if [[ -f "$lease_file" ]]; then
-    echo "Lease already exists for challenge=$challenge team=$team"
-    echo "Run stop first if you want to recreate it"
-    exit 1
+    # shellcheck disable=SC1090
+    source "$lease_file"
+
+    if sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" ps --status running --services 2>/dev/null | grep -q .; then
+      echo "Instance already running"
+      echo "Project : $PROJECT"
+      echo "URL     : http://192.168.56.10:${PORT}"
+      echo "Expires : $(date -d "@${EXPIRES_EPOCH}" '+%Y-%m-%d %H:%M:%S')"
+      return 0
+    fi
+
+    # Stale lease: cleanup and recreate.
+    sudo rm -rf "$INSTANCE_DIR"
+    sudo rm -f "$lease_file"
   fi
 
   sudo rm -rf "$instance_dir"
@@ -157,7 +203,7 @@ cmd_start() {
   sudo sed -i -E "s/\"[0-9]+:5000\"/\"${port}:5000\"/" "$instance_dir/docker-compose.yml"
   sudo sed -i -E "s/^([[:space:]]*container_name:).*/\1 ${project}_challenge/" "$instance_dir/docker-compose.yml"
 
-  sudo docker compose -p "$project" -f "$instance_dir/docker-compose.yml" up -d --build
+  "${docker_compose[@]}" -p "$project" -f "$instance_dir/docker-compose.yml" up -d --build
 
   local now expires_epoch
   now=$(date +%s)
@@ -199,7 +245,7 @@ cmd_stop() {
   # shellcheck disable=SC1090
   source "$lease_file"
 
-  sudo docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" down || true
+  sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" down || true
   sudo rm -rf "$INSTANCE_DIR"
   sudo rm -f "$lease_file"
 
@@ -219,7 +265,7 @@ cmd_status() {
     local remaining
     remaining=$(( EXPIRES_EPOCH - now ))
     local state="stopped"
-    if sudo docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" ps --status running --services 2>/dev/null | grep -q .; then
+    if sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" ps --status running --services 2>/dev/null | grep -q .; then
       state="running"
     fi
     echo "project=$PROJECT challenge=$CHALLENGE team=$TEAM port=$PORT state=$state ttl_remaining_sec=$remaining"
@@ -238,7 +284,7 @@ cmd_cleanup() {
     source "$lease"
     if (( EXPIRES_EPOCH <= now )); then
       echo "Cleaning expired instance: $PROJECT"
-      sudo docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" down || true
+      sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose -p "$PROJECT" -f "$INSTANCE_DIR/docker-compose.yml" down || true
       sudo rm -rf "$INSTANCE_DIR"
       sudo rm -f "$lease"
     fi
