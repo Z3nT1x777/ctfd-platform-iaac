@@ -16,6 +16,7 @@ This plugin integrates CTFd with the Player Instance Orchestrator API, enabling:
 - ✅ **Per-Team Quotas:** Enforced max 3 concurrent instances per team
 - ✅ **TTL Tracking:** Automatic instance expiration and cleanup
 - ✅ **Real-Time Progress:** Players see remaining TTL with auto-updating countdown
+- ✅ **Live Leaderboard:** Real-time activity board (`/plugins/orchestrator/leaderboard/live`)
 
 ---
 
@@ -72,6 +73,18 @@ Expected output:
 ```
 ctfd | [ctfd.orchestrator_plugin] CTFd Orchestrator Plugin initialized
 ```
+
+### Step 5: Open Ops UI
+
+Go to:
+
+`http://192.168.56.10:8000/plugins/orchestrator/ui`
+
+This UI provides:
+- Start challenge
+- Stop challenge
+- Live TTL countdown for active instances
+- Real-time team activity leaderboard
 
 ---
 

@@ -13,7 +13,6 @@ Features:
 """
 
 from CTFd.plugins import register_plugin_assets_directory
-from CTFd.utils import get_app
 
 from .plugin import OrchestrationPlugin
 

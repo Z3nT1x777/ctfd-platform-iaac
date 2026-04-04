@@ -1,6 +1,6 @@
 # CTFd + Orchestrator Integration Guide
 
-**Status:** ✅ Webhook infrastructure complete, CTFd plugin implementation available
+**Status:** ✅ Integrated in deployment templates with live UI + real-time leaderboard
 
 ---
 
@@ -81,32 +81,26 @@ Player Workflow:
 | **Webhook Endpoint** | ✅ Complete | `/ctfd/event` endpoint |
 | **CTFd Plugin** | ✅ Implemented | `scripts/ctfd-orchestrator-plugin/` |
 | **Plugin Tests** | ⚠️ Manual | Instructions: see README.md |
-| **CTFd UI Integration** | ⚠️ UI Buttons | Requires CTFd template modifications |
+| **CTFd UI Integration** | ✅ Live UI | `/plugins/orchestrator/ui` + quick link asset |
+| **Live Leaderboard** | ✅ Real-time | `/plugins/orchestrator/leaderboard/live` |
 
 ---
 
-## How to Enable (6 Steps)
+## How to Enable (3 Steps)
 
-### Step 1: Copy Plugin to CTFd
-
-```bash
-cd /path/to/ctf-platform-iaac-main
-vagrant ssh
-
-# Inside VM:
-sudo cp -r /vagrant/scripts/ctfd-orchestrator-plugin \
-    /opt/ctf/ctfd/plugins/ctfd_orchestrator_plugin
-
-sudo chown -R nobody:nogroup /opt/ctf/ctfd/plugins/ctfd_orchestrator_plugin
-```
-
-### Step 2: Install Python Dependencies
+### Step 1: Re-provision
 
 ```bash
-vagrant ssh -c "sudo docker exec ctfd pip install -r /plugin/requirements.txt"
+vagrant provision
 ```
 
-### Step 3: Configure Credentials
+The compose template now mounts the plugin directly:
+
+```yaml
+- /vagrant/scripts/ctfd-orchestrator-plugin:/opt/CTFd/CTFd/plugins/ctfd_orchestrator_plugin
+```
+
+### Step 2: Configure Credentials
 
 Edit `docker-compose-ctfd.yml.j2` to pass environment variables:
 
@@ -119,13 +113,13 @@ environment:
   - ORCHESTRATOR_TEAM_MAX_ACTIVE=3
 ```
 
-### Step 4: Restart CTFd
+### Step 3: Restart CTFd
 
 ```bash
 vagrant ssh -c "sudo docker-compose -f /opt/ctf/ctfd/docker-compose.yml restart ctfd"
 ```
 
-### Step 5: Verify Plugin Loaded
+### Verify Plugin Loaded
 
 ```bash
 vagrant ssh -c "sudo docker logs ctfd | grep -i orchestrator"
@@ -134,12 +128,13 @@ vagrant ssh -c "sudo docker logs ctfd | grep -i orchestrator"
 > [ctfd.orchestrator_plugin] CTFd Orchestrator Plugin initialized
 ```
 
-### Step 6: Test in CTFd UI
+### Test in CTFd UI
 
 1. Log into CTFd: http://192.168.56.10:8000
 2. Join/create team
 3. Click challenge → "Start Challenge"
-4. Should see instance URL appear
+4. Open ops page: `http://192.168.56.10:8000/plugins/orchestrator/ui`
+5. Start/stop instances from this page, watch live TTL and leaderboard
 
 ---
 

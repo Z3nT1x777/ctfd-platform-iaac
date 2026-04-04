@@ -142,6 +142,7 @@ SECURITY_STRICT=1 python scripts/security-preflight.py
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | nginx & orchestrator debugging, common issues, log locations, emergency procedures | Operators, DevOps engineers |
 | [docs/MONITORING.md](docs/MONITORING.md) | Prometheus & Grafana setup, metrics collection, dashboard creation, production alerting | DevOps engineers, ops team |
 | [docs/CTFD_ORCHESTRATOR_INTEGRATION.md](docs/CTFD_ORCHESTRATOR_INTEGRATION.md) | CTFd plugin for automatic instance launch, player workflow, multi-team quotas | CTF organizers, players, developers |
+| [docs/KUBERNETES_EXTENSION.md](docs/KUBERNETES_EXTENSION.md) | Kubernetes extension path, migration model from Docker Compose to K8s, rollout strategy | Platform engineers, DevOps |
 
 ### Key Feature Documentation
 

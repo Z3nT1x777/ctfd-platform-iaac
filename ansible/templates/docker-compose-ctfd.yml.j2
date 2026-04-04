@@ -12,10 +12,16 @@ services:
       - DATABASE_URL=mysql+pymysql://{{ DB_USER }}:{{ db_password_effective }}@db/{{ DB_NAME }}
       - REDIS_URL=redis://cache:6379
       - SECRET_KEY=${CTFD_SECRET_KEY:-change-me}
+      - ORCHESTRATOR_API_URL=http://127.0.0.1:{{ orchestrator_proxy_listen_port }}
+      - ORCHESTRATOR_API_TOKEN={{ orchestrator_api_token_effective }}
+      - ORCHESTRATOR_SIGNING_SECRET={{ orchestrator_signing_secret_effective }}
+      - ORCHESTRATOR_WEBHOOK_TOKEN={{ orchestrator_ctfd_webhook_token_effective }}
+      - ORCHESTRATOR_TEAM_MAX_ACTIVE={{ orchestrator_team_max_active }}
     volumes:
       - ./ctfd_data:/var/log/CTFd
       - ./ctfd_uploads:/var/uploads
       - /var/run/docker.sock:/var/run/docker.sock
+      - /vagrant/scripts/ctfd-orchestrator-plugin:/opt/CTFd/CTFd/plugins/ctfd_orchestrator_plugin
     depends_on:
       - db
       - cache
