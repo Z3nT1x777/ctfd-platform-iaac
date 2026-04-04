@@ -10,7 +10,7 @@ import os
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "ChangeMe-InsecureSecret")
 
-FLAG = os.environ.get("FLAG", "FLAG{test_flag_simple_login}")
+FLAG = os.environ.get("FLAG", "CTF{test_flag_simple_login}")
 CHALLENGE_NAME = "Simple Login"
 DIFFICULTY = "Easy (Warmup)"
 

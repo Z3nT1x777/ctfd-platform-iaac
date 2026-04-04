@@ -1,1 +1,1 @@
-FLAG{Authentification_B4sique_CTF}
+CTF{Authentification_B4sique_CTF}

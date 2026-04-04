@@ -5,9 +5,9 @@ services:
     build: .
     container_name: ctf-simple-login
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
-      - FLAG=FLAG{Authentification_B4sique_CTF}
+      - FLAG=CTF{Authentification_B4sique_CTF}
       - SECRET_KEY=ChangeMe-SimpleLoginSecret
     restart: always
     healthcheck:

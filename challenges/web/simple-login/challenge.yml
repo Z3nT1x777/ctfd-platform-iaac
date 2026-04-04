@@ -2,6 +2,8 @@ name: Simple Login
 category: Web
 difficulty: Easy
 points: 50
+value: 50
+type: docker
 description: |
   A simple web authentication challenge. Login with correct credentials to reveal the flag.
   This is a warmup challenge for basic web security concepts.
@@ -19,9 +21,10 @@ hints:
   - Default users included in app.py
   - Basic authentication test
 
+flag: CTF{Authentification_B4sique_CTF}
+port: 5001
+
 instance:
   type: docker-compose
   compose_file: docker-compose.yml
-  ports:
-    - "5000:5000"
   timeout: 60
