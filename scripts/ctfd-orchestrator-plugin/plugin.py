@@ -13,7 +13,8 @@ import json
 import os
 import re
 import time
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, render_template_string
@@ -187,8 +188,61 @@ class OrchestrationPlugin:
             webhook_token=os.getenv("ORCHESTRATOR_WEBHOOK_TOKEN", ""),
         )
         self.instance_tracker = InstanceTracker()
+        self._challenge_dir_cache: dict[str, Optional[str]] = {}
         self._register_routes()
         logger.info("CTFd Orchestrator Plugin initialized")
+
+    def _normalize_slug(self, value: str) -> str:
+        return re.sub(r"[^a-z0-9-]", "", (value or "").strip().lower().replace(" ", "-"))
+
+    def _resolve_challenge_dir_from_name(self, challenge_name: str) -> Optional[str]:
+        """Resolve a challenge directory under /vagrant/challenges, including nested layouts."""
+        slug = self._normalize_slug(challenge_name)
+        if not slug:
+            return None
+
+        if slug in self._challenge_dir_cache:
+            return self._challenge_dir_cache[slug]
+
+        base = Path("/vagrant/challenges")
+        if not base.exists():
+            self._challenge_dir_cache[slug] = None
+            return None
+
+        # Fast path: direct folder name match.
+        direct = base / slug
+        if (direct / "challenge.yml").exists():
+            resolved = str(direct)
+            self._challenge_dir_cache[slug] = resolved
+            return resolved
+
+        # Recursive path: match by folder name or challenge.yml name field.
+        for yml in base.rglob("challenge.yml"):
+            folder = yml.parent
+            if self._normalize_slug(folder.name) == slug:
+                resolved = str(folder)
+                self._challenge_dir_cache[slug] = resolved
+                return resolved
+
+            try:
+                content = yml.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+
+            m_name = re.search(r"^name:\s*(.+)$", content, flags=re.MULTILINE)
+            if m_name and self._normalize_slug(m_name.group(1).strip().strip('"\'')) == slug:
+                resolved = str(folder)
+                self._challenge_dir_cache[slug] = resolved
+                return resolved
+
+        self._challenge_dir_cache[slug] = None
+        return None
+
+    def _is_spawnable_challenge_name(self, challenge_name: str) -> bool:
+        challenge_dir = self._resolve_challenge_dir_from_name(challenge_name)
+        if not challenge_dir:
+            return False
+        return (Path(challenge_dir) / "docker-compose.yml").exists()
 
     def _resolve_team_id(self) -> str:
         """Resolve current user's team id in a CTFd-version-tolerant way."""
@@ -536,12 +590,13 @@ class OrchestrationPlugin:
         def list_challenges():
             """List available challenges for quick start UI."""
             items = Challenges.query.order_by(Challenges.id.asc()).all()
+            orchestrated = [ch for ch in items if self._is_orchestrated_challenge(ch)]
             return jsonify(
                 {
                     "ok": True,
                     "challenges": [
                         {"id": ch.id, "name": ch.name}
-                        for ch in items
+                        for ch in orchestrated
                     ],
                 }
             )
@@ -587,6 +642,13 @@ class OrchestrationPlugin:
 
             if not challenge:
                 return "Challenge not found", 404
+
+            if not self._is_orchestrated_challenge(challenge):
+                return (
+                    "This challenge does not use dynamic instance orchestration. "
+                    "Use the challenge instructions in CTFd.",
+                    400,
+                )
 
             active_count = self.instance_tracker.count_active_instances(team_id)
             max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 3))
@@ -908,6 +970,19 @@ class OrchestrationPlugin:
             if not challenge:
                 return "Challenge not found", 404
 
+            if not self._is_orchestrated_challenge(challenge):
+                return (
+                    """
+                <div style="font-family: sans-serif; padding: 20px; color: #444;">
+                    <h2>Static Challenge</h2>
+                    <p>This challenge does not require a dynamic instance launch.</p>
+                    <p>Please follow the challenge description/instructions directly.</p>
+                    <p><a href="/challenges">Back to challenges</a></p>
+                </div>
+                """,
+                    400,
+                )
+
             html = f"""
 <!doctype html>
 <html>
@@ -1107,6 +1182,8 @@ class OrchestrationPlugin:
                 synced = 0
 
                 for ch in challenges:
+                    if not self._is_orchestrated_challenge(ch):
+                        continue
                     # Generate button link for launch-mode connection_info
                     button_url = f"{request.host_url.rstrip('/')}/plugins/orchestrator/btn/{ch.id}?ttl_min=60"
                     
@@ -1133,12 +1210,14 @@ class OrchestrationPlugin:
 
     def _is_orchestrated_challenge(self, challenge) -> bool:
         """
-        Check if challenge is configured for orchestrator.
-        
-        Criteria:
-        - Has 'orchestrated' flag set (future: CTFd-level config)
-        - For now: all challenges with Docker Compose are eligible
+        Determine whether challenge should use dynamic orchestration.
+
+        Rule: only challenges backed by a spawnable runtime definition
+        (docker-compose.yml in /vagrant/challenges, including nested layouts)
+        are considered orchestrated.
         """
-        # Future: Check challenge.description or custom field for orchestration flag
-        # For MVP: assume all challenges are orchestrated (admins filter manually)
-        return True
+        try:
+            challenge_name = str(getattr(challenge, "name", "") or "")
+            return self._is_spawnable_challenge_name(challenge_name)
+        except Exception:
+            return False
