@@ -11,12 +11,17 @@ usage() {
 Usage:
   $0 start --challenge <name> --team <team-id> [--ttl-min 60] [--port 6201]
   $0 stop --challenge <name> --team <team-id>
+  $0 extend --challenge <name> --team <team-id> [--ttl-min 30]
   $0 status
   $0 cleanup
 EOF
 }
 
 sanitize() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[[:space:]]+/-/g' | tr -cd 'a-z0-9-' | sed -E 's/-+/-/g; s/^-+//; s/-+$//'
+}
+
+legacy_sanitize() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-'
 }
 
@@ -214,6 +219,7 @@ cmd_start() {
   echo "Instance started"
   echo "Project : $project"
   echo "URL     : http://192.168.56.10:${port}"
+  echo "EXPIRE_EPOCH=${expires_epoch}"
   echo "Expires : $(date -d "@${expires_epoch}" '+%Y-%m-%d %H:%M:%S')"
 }
 
@@ -238,8 +244,16 @@ cmd_stop() {
   lease_file=$(lease_file_for "$challenge" "$team")
 
   if [[ ! -f "$lease_file" ]]; then
+    local legacy_lease_file
+    legacy_lease_file=$(lease_file_for "$(legacy_sanitize "$challenge")" "$team")
+    if [[ -f "$legacy_lease_file" ]]; then
+      lease_file="$legacy_lease_file"
+    fi
+  fi
+
+  if [[ ! -f "$lease_file" ]]; then
     echo "No active lease for challenge=$challenge team=$team"
-    return 0
+    return 1
   fi
 
   # shellcheck disable=SC1090
@@ -250,6 +264,78 @@ cmd_stop() {
   sudo rm -f "$lease_file"
 
   echo "Instance stopped for challenge=$challenge team=$team"
+}
+
+cmd_extend() {
+  local challenge=""
+  local team=""
+  local ttl_min=30
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --challenge) challenge="$(sanitize "${2:-}")"; shift 2 ;;
+      --team) team="$(sanitize "${2:-}")"; shift 2 ;;
+      --ttl-min) ttl_min="${2:-}"; shift 2 ;;
+      *) echo "Unknown option: $1"; usage; exit 1 ;;
+    esac
+  done
+
+  if [[ -z "$challenge" || -z "$team" ]]; then
+    echo "--challenge and --team are required"
+    exit 1
+  fi
+
+  if ! [[ "$ttl_min" =~ ^[0-9]+$ ]] || (( ttl_min < 1 || ttl_min > 240 )); then
+    echo "--ttl-min must be between 1 and 240"
+    exit 1
+  fi
+
+  local lease_file
+  lease_file=$(lease_file_for "$challenge" "$team")
+
+  if [[ ! -f "$lease_file" ]]; then
+    local legacy_lease_file
+    legacy_lease_file=$(lease_file_for "$(legacy_sanitize "$challenge")" "$team")
+    if [[ -f "$legacy_lease_file" ]]; then
+      lease_file="$legacy_lease_file"
+    fi
+  fi
+
+  if [[ ! -f "$lease_file" ]]; then
+    echo "No active lease for challenge=$challenge team=$team"
+    return 1
+  fi
+
+  # shellcheck disable=SC1090
+  source "$lease_file"
+
+  local now
+  local current_remaining
+  local new_remaining
+  local new_expires_epoch
+  now=$(date +%s)
+  current_remaining=$(( EXPIRES_EPOCH - now ))
+  if (( current_remaining <= 0 )); then
+    echo "Lease already expired for challenge=$challenge team=$team"
+    return 1
+  fi
+
+  new_remaining=$(( current_remaining + ttl_min * 60 ))
+
+  if (( new_remaining > 3600 )); then
+    echo "Extension denied: total TTL cannot exceed 60 minutes"
+    return 1
+  fi
+
+  new_expires_epoch=$(( now + new_remaining ))
+
+  write_lease "$lease_file" "$CHALLENGE" "$TEAM" "$PROJECT" "$INSTANCE_DIR" "$PORT" "$(( (new_remaining + 59) / 60 ))" "$new_expires_epoch"
+
+  echo "Instance extended"
+  echo "Project : $PROJECT"
+  echo "URL     : http://192.168.56.10:${PORT}"
+  echo "EXPIRE_EPOCH=${new_expires_epoch}"
+  echo "Expires : $(date -d "@${new_expires_epoch}" '+%Y-%m-%d %H:%M:%S')"
 }
 
 cmd_status() {
@@ -303,6 +389,7 @@ main() {
   case "$command" in
     start) cmd_start "$@" ;;
     stop) cmd_stop "$@" ;;
+    extend) cmd_extend "$@" ;;
     status) cmd_status ;;
     cleanup) cmd_cleanup ;;
     *)

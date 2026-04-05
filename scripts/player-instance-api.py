@@ -157,6 +157,7 @@ UI_HTML = """<!doctype html>
     <div class=\"card\">
         <div class=\"row\">
             <input id=\"challenge\" placeholder=\"challenge (ex: web-01-test)\" />
+            <button onclick="extendInstance()">Add 30m</button>
             <input id=\"team\" placeholder=\"team (ex: team-alpha)\" />
             <input id=\"ttl\" type=\"number\" min=\"1\" max=\"240\" value=\"60\" />
             <input id=\"token\" placeholder=\"optional bearer token\" style=\"min-width:260px\" />
@@ -249,6 +250,16 @@ UI_HTML = """<!doctype html>
                 return;
             }
             await callApi('/stop', 'POST', { challenge, team });
+        }
+
+        async function extendInstance() {
+            const challenge = challengeInput();
+            const team = teamInput();
+            if (!challenge || !team) {
+                writeResponse({ ok: false, error: 'challenge and team are required' });
+                return;
+            }
+            await callApi('/extend', 'POST', { challenge, team, ttl_min: 30 });
         }
 
         async function refreshStatus() {
@@ -438,6 +449,19 @@ class Handler(BaseHTTPRequestHandler):
                 challenge,
                 "--team",
                 team,
+            ]
+
+        elif path == "/extend":
+            ttl_min_raw = data.get("ttl_min", 30)
+            ttl_min = int(ttl_min_raw) if str(ttl_min_raw).isdigit() else 30
+            args = [
+                "extend",
+                "--challenge",
+                challenge,
+                "--team",
+                team,
+                "--ttl-min",
+                str(ttl_min),
             ]
 
         elif path == "/cleanup":

@@ -47,6 +47,12 @@
         state: directory
         mode: '0755'
 
+    - name: Create orchestrator state directory
+      file:
+        path: /opt/ctf/orchestrator/state
+        state: directory
+        mode: '0700'
+
     - name: Create orchestrator config directory
       file:
         path: /etc/ctf

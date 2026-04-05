@@ -171,9 +171,30 @@ class OrchestratorWebhookHandler:
         payload = {"challenge": challenge_name, "team": team_id}
         return self._make_request("POST", "/stop", payload)
 
+    def extend_instance(
+        self,
+        challenge_name: str,
+        team_id: str,
+        ttl_min: int = 30,
+    ) -> Dict[str, Any]:
+        """Extend a running challenge instance."""
+        payload = {"challenge": challenge_name, "team": team_id, "ttl_min": ttl_min}
+        result = self._make_request("POST", "/extend", payload)
+
+        if result.get("ok"):
+            stdout = result.get("stdout", "").strip()
+            parsed = self._parse_manager_output(stdout)
+            result.update(parsed)
+
+        return result
+
     def cleanup_instances(self) -> Dict[str, Any]:
         """Cleanup expired instances."""
         return self._make_request("POST", "/cleanup", {})
+
+    def get_status(self) -> Dict[str, Any]:
+        """Fetch live instance status from the manager."""
+        return self._make_request("GET", "/status", {}, sign=False)
 
     def _parse_manager_output(self, stdout: str) -> Dict[str, Any]:
         """

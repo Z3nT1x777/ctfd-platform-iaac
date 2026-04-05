@@ -1,0 +1,14 @@
+name: OSINT Template Example
+category: osint
+value: 75
+type: static
+connection_mode: instruction
+access_instructions: |
+  This is a template instruction-only challenge.
+  Replace this text with your scenario, clues, and expected workflow.
+  Provide the clue material as a PDF, image, document, or external reference.
+  No browser link or container launch is required.
+description: |
+  Generic static OSINT example for template usage.
+  Customize the narrative, document/image assets, and final flag before publishing.
+flag: CTF{replace_with_real_flag}

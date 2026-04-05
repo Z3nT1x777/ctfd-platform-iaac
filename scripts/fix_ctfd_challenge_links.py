@@ -46,8 +46,8 @@ def update_challenge_links():
         synced = 0
         
         for ch_id, ch_name in challenges:
-            # Generate button URL
-            button_url = f"{INSTANCE_BASE_URL}/plugins/orchestrator/btn/{ch_id}?ttl_min=60"
+            # Generate direct launch URL.
+            button_url = f"{INSTANCE_BASE_URL}/plugins/orchestrator/launch?challenge_id={ch_id}"
             
             # Update connection_info
             cursor.execute(
@@ -58,7 +58,7 @@ def update_challenge_links():
             synced += 1
         
         conn.commit()
-        print(f"\n✅ Success! Updated {synced} challenges with button links")
+        print(f"\n✅ Success! Updated {synced} challenges with launch links")
         return True
 
     except Exception as e:

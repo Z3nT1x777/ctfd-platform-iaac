@@ -267,9 +267,9 @@ def sync_challenge(
         # For new challenges, we'll update connection_info after creation
         # For existing challenges, we can use the known challenge_id
         if challenge_id > 0:
-            # Known challenge ID - use button link directly
+            # Known challenge ID - use direct launch link.
             connection_info = (
-                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/btn/{challenge_id}?ttl_min=60"
+                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge_id={challenge_id}"
             )
         else:
             # New challenge - will be updated after creation
@@ -295,9 +295,7 @@ def sync_challenge(
         
         # For launch-link mode on new challenges, update with correct button link
         if connection_mode == "launch-link" and instance_base_url:
-            updated_connection_info = (
-                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/btn/{challenge_id}?ttl_min=60"
-            )
+            updated_connection_info = f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge_id={challenge_id}"
             api_request(
                 session,
                 "PATCH",

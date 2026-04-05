@@ -11,7 +11,7 @@ Challenge templates are maintained in [challenges/_templates](../challenges/_tem
 | Family | Type | Use Case | Example |
 |--------|------|----------|---------|
 | `web` | Docker | Web applications, login forms, SQL injection | `challenges/web/simple-login/` |
-| `osint` | Static | OSINT, RECON tasks, documents | `challenges/osint/eiffel-shadow/` |
+| `osint` | Static | OSINT, RECON tasks, documents | `challenges/osint/template-example/` |
 | `sandbox` | Docker | Isolated environments, VMs, system challenges, SSH labs | `challenges/sandbox/ssh-lab/` |
 | `reverse` | Docker | Reverse engineering, binary analysis | `challenges/reverse/simple-exe/` |
 | `pwn` | Docker | Exploitation, buffer overflows, ROP | `challenges/pwn/basic-overflow/` |

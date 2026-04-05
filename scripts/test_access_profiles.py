@@ -51,10 +51,10 @@ def test_ssh_example() -> None:
 
 
 def test_instruction_example() -> None:
-    challenge_dir = ROOT / "challenges" / "osint" / "eiffel-shadow"
+    challenge_dir = ROOT / "challenges" / "osint" / "template-example"
     hints = load_access_hint_from_dir(challenge_dir)
     methods = build_access_methods(
-        challenge_name="Eiffel Shadow",
+        challenge_name="OSINT Template Example",
         challenge_dir=challenge_dir,
         stdout="Static instruction challenge",
     )

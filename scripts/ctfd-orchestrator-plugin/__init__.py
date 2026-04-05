@@ -12,7 +12,7 @@ Features:
 - Real-time progress tracking and TTL countdown
 """
 
-from CTFd.plugins import register_plugin_assets_directory
+from CTFd.plugins import register_plugin_assets_directory, register_plugin_script
 
 from .plugin import OrchestrationPlugin
 
@@ -23,4 +23,5 @@ def load(app):
     register_plugin_assets_directory(
         app, base_path="/plugins/ctfd_orchestrator_plugin/assets"
     )
+    register_plugin_script("/plugins/ctfd_orchestrator_plugin/assets/orchestrator-ui.js")
     return plugin

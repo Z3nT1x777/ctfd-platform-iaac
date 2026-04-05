@@ -1,13 +1,14 @@
-# Eiffel Shadow
+# OSINT Template Example
 
 ## Overview
 
-Static OSINT-style example challenge for the template repository.
+Static OSINT-style template challenge.
 It demonstrates an instruction-only access mode.
 
 ## Player Goal
 
-Use the provided clues to identify the place matching the fake Eiffel Tower concept and submit the flag.
+Replace this section with your real objective and clue progression.
+Use a PDF, image, or other document asset as the clue source when you adapt the challenge.
 
 ## Access Mode
 
