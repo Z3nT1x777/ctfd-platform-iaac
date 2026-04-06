@@ -21,8 +21,8 @@ This matrix defines what belongs in the baseline template versus what should liv
 | Plugin UI theme details | Team preference dependent | Optional Template Module | Keep functional, avoid heavy branding |
 | Monitoring docs | Useful but not mandatory | Optional Template Module | Keep documented as optional |
 | Kubernetes extension docs | Advanced path, not baseline | Optional Template Module | Keep documented as optional |
-| Direct DB patch script (`scripts/fix_ctfd_challenge_links.py`) | Operational shortcut with hardcoded defaults | Custom Repository Only | Treat as legacy and avoid template-first usage |
-| Legacy SQL patch (`scripts/fix_ctfd_links.sql`) | Legacy/manual fix | Custom Repository Only | Keep out of default workflow |
+| Direct DB patch script (`scripts/fix_ctfd_challenge_links.py`) | Legacy operational shortcut | Excluded from baseline template | Keep only in custom/operator repo if needed |
+| Legacy SQL patch (`scripts/fix_ctfd_links.sql`) | Legacy/manual fix | Excluded from baseline template | Keep only in custom/operator repo if needed |
 | Team-specific runbooks | Operator-specific | Custom Repository Only | Move to custom repo docs |
 
 ## Baseline Acceptance Criteria

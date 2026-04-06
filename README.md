@@ -1,4 +1,4 @@
-# CTF Platform Infrastructure as Code
+# CTF Platform Template
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Vagrant](https://img.shields.io/badge/Vagrant-2.4%2B-blue)](https://www.vagrantup.com/)
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This repository provides an end-to-end Infrastructure as Code setup for a self-hosted CTF platform.
+This repository provides an end-to-end Infrastructure as Code template for a self-hosted CTF platform.
 
 Template baseline intent:
 
@@ -44,10 +44,12 @@ Core capabilities already implemented:
 ## Quick Start
 
 ```bash
-git clone https://github.com/USERNAME/ctf-platform-iaac.git
-cd ctf-platform-iaac
+git clone https://github.com/USERNAME/ctfd-platform-template.git
+cd ctfd-platform-template
 vagrant up --provision
 ```
+
+If you want a fully custom product repo, clone this template first, then point `origin` to your private custom repository and keep the template as `upstream`.
 
 Access points after provisioning:
 
@@ -100,8 +102,8 @@ All the following security controls are implemented and active in production:
 
 **Development (on your laptop):**
 ```bash
-git clone https://github.com/USERNAME/ctf-platform-iaac.git
-cd ctf-platform-iaac
+git clone https://github.com/USERNAME/ctfd-platform-template.git
+cd ctfd-platform-template
 vagrant up --provision
 # Default credentials are safe for local VM testing
 # No vault needed, all defaults from ansible/vars/main.yml
