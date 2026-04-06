@@ -38,26 +38,26 @@ UI_TEMPLATE = """
     <title>Team Instances Dashboard</title>
     <style>
         :root {
-            --bg-a: #06111f;
-            --bg-b: #0d2135;
-            --panel: rgba(16, 29, 47, 0.92);
-            --panel-2: rgba(22, 39, 59, 0.96);
-            --line: rgba(255,255,255,0.08);
-            --text: #e9f1ff;
-            --muted: #9fb0c6;
-            --green: #2cd66b;
-            --red: #ef4444;
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --surface-alt: #f8fafc;
+            --line: #dbe3ee;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --green: #15803d;
+            --green-soft: #dcfce7;
+            --red: #b91c1c;
+            --red-soft: #fee2e2;
+            --blue: #2563eb;
+            --blue-soft: #dbeafe;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
             color: var(--text);
-            background:
-                radial-gradient(900px 500px at 10% 0%, rgba(44,214,107,0.18), transparent 60%),
-                radial-gradient(800px 500px at 95% 110%, rgba(36,74,122,0.55), transparent 60%),
-                linear-gradient(145deg, var(--bg-a), var(--bg-b));
+            background: var(--bg);
             padding: 24px 18px 36px;
         }
         .wrap { max-width: 1240px; margin: 0 auto; }
@@ -69,36 +69,36 @@ UI_TEMPLATE = """
             margin-bottom: 18px;
             flex-wrap: wrap;
         }
-        h1 { margin: 0 0 10px; font-size: clamp(2rem, 4vw, 3.1rem); }
+        h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 4vw, 2.8rem); }
         .sub { margin: 0; color: var(--muted); font-size: 1.05rem; }
         .top-actions { display: flex; gap: 12px; flex-wrap: wrap; }
         .flash {
             margin-top: 12px;
             padding: 10px 12px;
             border-radius: 10px;
-            border: 1px solid var(--line);
+            border: 1px solid transparent;
             font-weight: 600;
             display: none;
         }
         .flash.ok {
             display: block;
-            color: #d8ffe7;
-            background: rgba(44, 214, 107, 0.18);
-            border-color: rgba(44, 214, 107, 0.38);
+            color: var(--green);
+            background: var(--green-soft);
+            border-color: #bbf7d0;
         }
         .flash.err {
             display: block;
-            color: #ffdfe1;
-            background: rgba(239, 68, 68, 0.16);
-            border-color: rgba(239, 68, 68, 0.38);
+            color: var(--red);
+            background: var(--red-soft);
+            border-color: #fecaca;
         }
         .btn {
             border: 1px solid var(--line);
-            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+            background: var(--surface);
             color: var(--text);
             border-radius: 14px;
             padding: 14px 18px;
-            font-weight: 700;
+            font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -106,20 +106,25 @@ UI_TEMPLATE = """
             gap: 8px;
             min-width: 152px;
             cursor: pointer;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
         }
-        .btn.refresh { background: linear-gradient(90deg, #1e3556, #223e64); }
+        .btn.refresh {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
         .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
         .panel {
-            background: var(--panel);
+            background: var(--surface);
             border: 1px solid var(--line);
             border-radius: 20px;
             padding: 18px;
-            box-shadow: 0 18px 50px rgba(0,0,0,0.32);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
         }
         .panel h2 { margin: 0 0 12px; font-size: 1.35rem; }
         .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
         .inst {
-            background: var(--panel-2);
+            background: var(--surface-alt);
             border: 1px solid var(--line);
             border-radius: 18px;
             padding: 16px;
@@ -130,18 +135,18 @@ UI_TEMPLATE = """
         }
         .inst-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
         .name { margin: 0; font-size: 1.35rem; }
-        .state { color: #0a1d10; background: #41d37a; border-radius: 999px; padding: 8px 14px; font-weight: 800; }
-        .state.down { color: #fff; background: var(--red); }
-        .ttlbox { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: rgba(255,255,255,0.03); }
+        .state { color: #166534; background: var(--green-soft); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+        .state.down { color: var(--red); background: var(--red-soft); }
+        .ttlbox { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface); }
         .k { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
         .v { font-size: 1.25rem; font-weight: 800; margin-top: 6px; }
         .tags { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tag { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--muted); }
+        .tag { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--muted); background: var(--surface); }
         .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
         .action { border: 0; border-radius: 14px; padding: 13px 16px; font-weight: 800; cursor: pointer; }
-        .open { background: linear-gradient(90deg, #30c36a, #0f9f4b); color: #06170f; }
-        .extend { background: linear-gradient(90deg, #223b62, #2f527f); color: var(--text); }
-        .kill { background: linear-gradient(90deg, #ef4444, #c81e1e); color: #fff; }
+        .open { background: var(--green); color: #fff; }
+        .extend { background: var(--blue); color: #fff; }
+        .kill { background: var(--red); color: #fff; }
         .leader {
             width: 100%;
             border-collapse: collapse;
@@ -153,7 +158,7 @@ UI_TEMPLATE = """
             border-bottom: 1px solid var(--line);
             text-align: left;
         }
-        .leader th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .leader th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; }
         .leader tr:last-child td { border-bottom: 0; }
         @media (max-width: 980px) {
             .grid { grid-template-columns: 1fr; }
@@ -166,7 +171,7 @@ UI_TEMPLATE = """
         <div class=\"hero\">
             <div>
                 <h1>Team Instances Dashboard</h1>
-                <p class=\"sub\">Team: {{ team_name|e }}. View all running containers, uptime, and stop them from one place.</p>
+                <p class="sub">Team: {{ team_name|e }}. Manage running instances, TTL, and lifecycle actions from a single panel.</p>
                 <div id=\"actionMessage\" class=\"flash{% if initial_message %} {{ initial_kind }}{% endif %}\">{{ initial_message|e }}</div>
             </div>
             <div class=\"top-actions\">
@@ -517,6 +522,32 @@ class OrchestrationPlugin:
                 return challenge
 
         return None
+
+    def _dashboard_redirect(self, kind: str, message: str):
+        return redirect(
+            "/plugins/orchestrator/dashboard?kind="
+            + quote(str(kind or "ok"))
+            + "&msg="
+            + quote(str(message or "")),
+            code=302,
+        )
+
+    def _resolve_current_instance_ttl(self, team_id: str, challenge) -> int:
+        current_ttl = 0
+
+        row = self._find_status_row(str(team_id), challenge.name)
+        if row and str(row.get("state", "")).strip().lower() == "running":
+            current_ttl = max(0, int(row.get("ttl_remaining_sec", 0) or 0))
+        else:
+            for inst in self.instance_tracker.get_team_instances(str(team_id)):
+                if int(inst.get("challenge_id", -1)) == int(challenge.id):
+                    current_ttl = max(
+                        0,
+                        int(inst.get("expire_epoch", 0) or 0) - int(time.time()),
+                    )
+                    break
+
+        return current_ttl
 
     def _resolve_team_id(self) -> str:
         """Resolve current user's team id in a CTFd-version-tolerant way."""
@@ -1209,19 +1240,17 @@ class OrchestrationPlugin:
     <title>Instance Ready</title>
     <style>
         :root {{
-            --bg-a: #0b1220;
-            --bg-b: #0f1f2f;
-            --card: #0f1726;
-            --text: #ecf2ff;
-            --muted: #a8b4ca;
-            --ok: #23c47e;
-            --bad: #ef4444;
-            --btn-a: #16a34a;
-            --btn-b: #22c55e;
-            --btn-secondary-a: #1e293b;
-            --btn-secondary-b: #334155;
-            --ring: rgba(35, 196, 126, 0.35);
-            --line: rgba(255, 255, 255, 0.08);
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --surface: #f8fafc;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --ok: #15803d;
+            --bad: #b91c1c;
+            --btn-primary: #2563eb;
+            --btn-secondary: #ffffff;
+            --ring: rgba(37, 99, 235, 0.14);
+            --line: #dbe3ee;
         }}
 
         * {{ box-sizing: border-box; }}
@@ -1230,10 +1259,7 @@ class OrchestrationPlugin:
             min-height: 100vh;
             display: grid;
             place-items: center;
-            background:
-                radial-gradient(1200px 700px at 10% -20%, #123a6a 0%, transparent 55%),
-                radial-gradient(900px 600px at 95% 120%, #1a5b5f 0%, transparent 55%),
-                linear-gradient(135deg, var(--bg-a), var(--bg-b));
+            background: var(--bg);
             font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
             color: var(--text);
             padding: 24px;
@@ -1241,10 +1267,10 @@ class OrchestrationPlugin:
 
         .card {{
             width: min(680px, 96vw);
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            background: var(--card);
             border: 1px solid var(--line);
             border-radius: 18px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
             overflow: hidden;
         }}
 
@@ -1267,13 +1293,13 @@ class OrchestrationPlugin:
 
         .dot.bad {{
             background: var(--bad);
-            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.22);
+            box-shadow: 0 0 0 8px rgba(185, 28, 28, 0.12);
         }}
 
         @keyframes pulse {{
             0% {{ box-shadow: 0 0 0 0 var(--ring); }}
-            70% {{ box-shadow: 0 0 0 12px rgba(35,196,126,0); }}
-            100% {{ box-shadow: 0 0 0 0 rgba(35,196,126,0); }}
+            70% {{ box-shadow: 0 0 0 12px rgba(37,99,235,0); }}
+            100% {{ box-shadow: 0 0 0 0 rgba(37,99,235,0); }}
         }}
 
         .title {{
@@ -1292,7 +1318,7 @@ class OrchestrationPlugin:
         }}
 
         .pill {{
-            background: rgba(255,255,255,0.03);
+            background: var(--surface);
             border: 1px solid var(--line);
             border-radius: 10px;
             padding: 10px 12px;
@@ -1309,7 +1335,7 @@ class OrchestrationPlugin:
 
         .method {{
             border: 1px solid var(--line);
-            background: rgba(255,255,255,0.02);
+            background: var(--surface);
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 12px;
@@ -1321,7 +1347,7 @@ class OrchestrationPlugin:
         .cmd-row label {{ color: var(--muted); font-size: 0.85rem; display: block; margin-bottom: 6px; }}
         pre {{
             margin: 0 0 8px;
-            background: #0b1322;
+            background: #f8fafc;
             border: 1px solid var(--line);
             border-radius: 8px;
             padding: 10px;
@@ -1342,14 +1368,14 @@ class OrchestrationPlugin:
         .btn:hover {{ transform: translateY(-1px); }}
 
         .btn-primary {{
-            color: #06260f;
-            background: linear-gradient(90deg, var(--btn-a), var(--btn-b));
-            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+            background: var(--btn-primary);
+            border-color: var(--btn-primary);
         }}
 
         .btn-secondary {{
             color: var(--text);
-            background: linear-gradient(90deg, var(--btn-secondary-a), var(--btn-secondary-b));
+            background: var(--btn-secondary);
             border-color: var(--line);
         }}
 
@@ -1394,7 +1420,7 @@ class OrchestrationPlugin:
 
             <a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a>
 
-            <p class=\"tiny\" id=\"autoLine\">Auto-redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:#9ad1ff; margin-left:6px;\">stay here</a></p>
+            <p class=\"tiny\" id=\"autoLine\">Auto-redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
         </div>
     </section>
 
@@ -1576,13 +1602,13 @@ class OrchestrationPlugin:
             challenge_ref = str(request.args.get("challenge_ref", "") or "").strip()
 
             if not team_id:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Team not found"), code=302)
+                return self._dashboard_redirect("err", "Team not found")
             if not challenge_ref:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Missing challenge reference"), code=302)
+                return self._dashboard_redirect("err", "Missing challenge reference")
 
             challenge = self._resolve_challenge_from_reference(challenge_ref)
             if not challenge:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Challenge not found"), code=302)
+                return self._dashboard_redirect("err", "Challenge not found")
 
             result = self.orchestrator_handler.stop_instance(
                 challenge_name=challenge.name,
@@ -1590,10 +1616,10 @@ class OrchestrationPlugin:
             )
             if not result.get("ok"):
                 detail = str(result.get("detail", "") or result.get("error", "orchestrator_error"))
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote(f"Kill failed: {detail}"), code=302)
+                return self._dashboard_redirect("err", f"Kill failed: {detail}")
 
             self.instance_tracker.remove_instance(team_id, int(challenge.id))
-            return redirect("/plugins/orchestrator/dashboard?kind=ok&msg=" + quote(f"Instance stopped for {challenge.name}."), code=302)
+            return self._dashboard_redirect("ok", f"Instance stopped for {challenge.name}.")
 
         @bp.route("/extend-ui", methods=["GET"])
         @authed_only
@@ -1604,31 +1630,23 @@ class OrchestrationPlugin:
             challenge_ref = str(request.args.get("challenge_ref", "") or "").strip()
 
             if not team_id:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Team not found"), code=302)
+                return self._dashboard_redirect("err", "Team not found")
             if not challenge_ref:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Missing challenge reference"), code=302)
+                return self._dashboard_redirect("err", "Missing challenge reference")
 
             challenge = self._resolve_challenge_from_reference(challenge_ref)
             if not challenge:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Challenge not found"), code=302)
+                return self._dashboard_redirect("err", "Challenge not found")
 
             add_seconds = 30 * 60
             max_seconds = 60 * 60
-            current_ttl = 0
-            row = self._find_status_row(str(team_id), challenge.name)
-            if row and str(row.get("state", "")).strip().lower() == "running":
-                current_ttl = max(0, int(row.get("ttl_remaining_sec", 0) or 0))
-            else:
-                for inst in self.instance_tracker.get_team_instances(str(team_id)):
-                    if int(inst.get("challenge_id", -1)) == int(challenge.id):
-                        current_ttl = max(0, int(inst.get("expire_epoch", 0) or 0) - int(time.time()))
-                        break
+            current_ttl = self._resolve_current_instance_ttl(str(team_id), challenge)
 
             if current_ttl <= 0:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Cannot add time: instance is not running."), code=302)
+                return self._dashboard_redirect("err", "Cannot add time: instance is not running.")
 
             if current_ttl + add_seconds > max_seconds:
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote("Cannot exceed 1 hour total TTL for one instance."), code=302)
+                return self._dashboard_redirect("err", "Cannot exceed 1 hour total TTL for one instance.")
 
             result = self.orchestrator_handler.extend_instance(
                 challenge_name=challenge.name,
@@ -1637,13 +1655,13 @@ class OrchestrationPlugin:
             )
             if not result.get("ok"):
                 detail = str(result.get("detail", "") or result.get("error", "orchestrator_error"))
-                return redirect("/plugins/orchestrator/dashboard?kind=err&msg=" + quote(f"Add time failed: {detail}"), code=302)
+                return self._dashboard_redirect("err", f"Add time failed: {detail}")
 
             expire_epoch = int(result.get("expire_epoch", 0) or 0)
             if expire_epoch:
                 self.instance_tracker.update_instance_expire(team_id, int(challenge.id), expire_epoch)
 
-            return redirect("/plugins/orchestrator/dashboard?kind=ok&msg=" + quote(f"Added 30m on {challenge.name}."), code=302)
+            return self._dashboard_redirect("ok", f"Added 30m on {challenge.name}.")
 
         @bp.route("/instance-status", methods=["GET"])
         @authed_only

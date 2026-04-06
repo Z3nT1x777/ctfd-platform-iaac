@@ -1,4 +1,14 @@
 (function () {
+  function applyFloatingButtonStyle(link, bottomOffset) {
+    link.style.position = "fixed";
+    link.style.right = "18px";
+    link.style.bottom = bottomOffset;
+    link.style.zIndex = "9999";
+    link.style.textDecoration = "none";
+    link.style.borderRadius = "999px";
+    link.style.boxShadow = "0 12px 30px rgba(0,0,0,0.18)";
+  }
+
   function mountQuickLink() {
     if (document.getElementById("orchestrator-ui-link")) {
       return;
@@ -8,22 +18,12 @@
     link.id = "orchestrator-ui-link";
     link.href = "/plugins/orchestrator/dashboard";
     link.textContent = "Team Dashboard";
-    link.className = "btn btn-sm btn-primary";
+    link.className = "btn btn-primary btn-sm";
 
     const onChallengesPage = window.location.pathname.startsWith("/challenges");
 
     if (onChallengesPage) {
-      link.style.position = "fixed";
-      link.style.right = "18px";
-      link.style.bottom = "18px";
-      link.style.background = "linear-gradient(90deg, #2d7dff, #52d0ff)";
-      link.style.color = "#06192e";
-      link.style.padding = "12px 16px";
-      link.style.borderRadius = "999px";
-      link.style.fontWeight = "700";
-      link.style.textDecoration = "none";
-      link.style.zIndex = "9999";
-      link.style.boxShadow = "0 12px 30px rgba(0,0,0,0.28)";
+      applyFloatingButtonStyle(link, "18px");
       document.body.appendChild(link);
       return;
     }
@@ -33,24 +33,12 @@
       const item = document.createElement("li");
       item.className = "nav-item";
       link.classList.add("nav-link");
-      link.style.marginLeft = "8px";
-      link.style.marginTop = "2px";
       item.appendChild(link);
       navBar.appendChild(item);
       return;
     }
 
-    link.style.position = "fixed";
-    link.style.right = "16px";
-    link.style.bottom = "16px";
-    link.style.background = "#0f172a";
-    link.style.color = "#fff";
-    link.style.padding = "10px 14px";
-    link.style.borderRadius = "999px";
-    link.style.fontWeight = "600";
-    link.style.textDecoration = "none";
-    link.style.zIndex = "9999";
-    link.style.boxShadow = "0 8px 20px rgba(0,0,0,0.25)";
+    applyFloatingButtonStyle(link, "16px");
 
     document.body.appendChild(link);
   }
