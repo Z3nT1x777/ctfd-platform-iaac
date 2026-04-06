@@ -1774,12 +1774,16 @@ class OrchestrationPlugin:
             background: #0a1524;
             border: 1px solid var(--line);
             border-radius: 10px;
-            padding: 12px 12px 28px;
+            padding: 12px 44px 12px 14px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
             font-size: 0.98rem;
             cursor: pointer;
             user-select: all;
-            word-break: break-all;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            line-height: 1.35;
+            word-break: break-word;
             transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
         }}
 
@@ -1801,43 +1805,34 @@ class OrchestrationPlugin:
 
         .copy-icon {{
             position: absolute;
-            right: 10px;
-            bottom: 8px;
-            width: 14px;
-            height: 14px;
-            border: 1.6px solid #94a3b8;
-            border-radius: 2px;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid #9fb0c6;
+            border-radius: 3px;
+            opacity: 0.95;
             pointer-events: none;
-        }}
-
-        .copy-icon::before {{
-            content: "";
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            left: -5px;
-            top: -5px;
-            border: 1.6px solid #64748b;
-            border-radius: 2px;
         }}
 
         .copy-ok {{
             position: absolute;
-            right: 8px;
-            top: 8px;
+            right: 34px;
+            top: 50%;
             color: #86efac;
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.04em;
             opacity: 0;
-            transform: translateY(-2px);
+            transform: translateY(calc(-50% - 2px));
             transition: opacity 0.14s ease, transform 0.14s ease;
             pointer-events: none;
         }}
 
         .cmd-copy-card.copied .copy-ok {{
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(-50%);
         }}
 
         .btn {{
