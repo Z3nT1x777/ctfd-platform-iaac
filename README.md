@@ -143,6 +143,7 @@ SECURITY_STRICT=1 python scripts/security-preflight.py
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
+| [docs/REPO_CONTENT_GUIDELINES.md](docs/REPO_CONTENT_GUIDELINES.md) | Defines what belongs in public template, private template, or custom-only layers | Maintainers, contributors |
 | [docs/TEMPLATE_SCOPE_MATRIX.md](docs/TEMPLATE_SCOPE_MATRIX.md) | Defines what belongs in baseline template vs optional vs custom-only scope | Maintainers, contributors |
 | [docs/CUSTOM_REPO_WORKFLOW.md](docs/CUSTOM_REPO_WORKFLOW.md) | Explains template/upstream and custom/origin workflow | Maintainers, platform teams |
 | [docs/WORKFLOW_PRIORITES.md](docs/WORKFLOW_PRIORITES.md) | Project roadmap by priority level (P1-P3), current implementation status | Project leads, contributors |
