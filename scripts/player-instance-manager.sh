@@ -88,6 +88,25 @@ resolve_challenge_dir() {
   return 1
 }
 
+resolve_container_port() {
+  local challenge_dir="$1"
+  local yml="$challenge_dir/challenge.yml"
+
+  if [[ ! -f "$yml" ]]; then
+    echo "5000"
+    return 0
+  fi
+
+  local container_port
+  container_port=$(grep -E '^container_port:[[:space:]]*[0-9]+' "$yml" | head -1 | awk '{print $2}' | tr -d '\r' || true)
+
+  if [[ -n "$container_port" ]]; then
+    echo "$container_port"
+  else
+    echo "5000"
+  fi
+}
+
 write_lease() {
   local lease_file="$1"
   local challenge="$2"
@@ -158,6 +177,8 @@ cmd_start() {
   ensure_dirs
 
   local docker_compose=(sudo env HOME=/tmp DOCKER_CONFIG=/tmp/.docker docker compose)
+  local container_port
+  container_port=$(resolve_container_port "$challenge_dir")
 
   if [[ -z "$port" ]]; then
     port=$(find_free_port) || { echo "No free port found in ${PORT_MIN}-${PORT_MAX}"; exit 1; }
@@ -205,7 +226,7 @@ cmd_start() {
     exit 1
   fi
 
-  sudo sed -i -E "s/\"[0-9]+:5000\"/\"${port}:5000\"/" "$instance_dir/docker-compose.yml"
+  sudo sed -i -E "s/\"[0-9]+:${container_port}\"/\"${port}:${container_port}\"/" "$instance_dir/docker-compose.yml"
   sudo sed -i -E "s/^([[:space:]]*container_name:).*/\1 ${project}_challenge/" "$instance_dir/docker-compose.yml"
 
   "${docker_compose[@]}" -p "$project" -f "$instance_dir/docker-compose.yml" up -d --build

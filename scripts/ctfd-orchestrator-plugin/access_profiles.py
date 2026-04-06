@@ -68,23 +68,41 @@ def load_access_hint_from_dir(challenge_dir: Union[str, Path]) -> Dict[str, str]
     challenge_path = Path(challenge_dir)
     yml_path = challenge_path / "challenge.yml"
     if not yml_path.exists():
-        return {"mode": "auto", "ssh_user": "", "instructions": "", "container_port": ""}
+        return {
+            "mode": "auto",
+            "ssh_user": "",
+            "ssh_password": "",
+            "instructions": "",
+            "hint": "",
+            "container_port": "",
+        }
 
     try:
         yml_text = yml_path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
-        return {"mode": "auto", "ssh_user": "", "instructions": "", "container_port": ""}
+        return {
+            "mode": "auto",
+            "ssh_user": "",
+            "ssh_password": "",
+            "instructions": "",
+            "hint": "",
+            "container_port": "",
+        }
 
     metadata = parse_simple_challenge_yaml(yml_text)
     mode = (metadata.get("connection_mode") or metadata.get("access_mode") or "auto").strip().lower()
     ssh_user = metadata.get("ssh_user", "").strip()
+    ssh_password = metadata.get("ssh_password", metadata.get("initial_password", "")).strip()
     instructions = metadata.get("access_instructions", "").strip()
+    hint = metadata.get("hint", metadata.get("player_hint", "")).strip()
     container_port = metadata.get("container_port", metadata.get("internal_port", "")).strip()
 
     return {
         "mode": mode,
         "ssh_user": ssh_user,
+        "ssh_password": ssh_password,
         "instructions": instructions,
+        "hint": hint,
         "container_port": container_port,
         "type": metadata.get("type", "").strip().lower(),
     }

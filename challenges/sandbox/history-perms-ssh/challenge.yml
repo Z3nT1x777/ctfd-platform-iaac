@@ -4,10 +4,18 @@ value: 250
 type: docker
 connection_mode: ssh
 ssh_user: player
+ssh_password: player2026
 container_port: 22
+access_instructions: |
+  Connect with the SSH command below, then authenticate with the credentials card.
+  Goal: pivot from shell history breadcrumbs to privilege escalation and recover the flag.
+hint: |
+  Start with: cat ~/.bash_history
+  Then inspect: cat /opt/ops/notes/incident.txt
+  Finally enumerate sudo rights: sudo -l
 description: |
   Gain SSH access to the instance, investigate shell history breadcrumbs,
   and exploit a privilege misconfiguration to recover the flag.
 
 flag: CTF{history_leak_plus_sudo_misconfig}
-port: 5013
+port: 5014

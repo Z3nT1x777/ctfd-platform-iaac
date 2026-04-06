@@ -36,143 +36,315 @@ UI_TEMPLATE = """
     <meta charset=\"utf-8\" />
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
     <title>Team Instances Dashboard</title>
-    <style>
+    <style>{% raw %}
         :root {
-            --bg: #f4f7fb;
-            --surface: #ffffff;
-            --surface-alt: #f8fafc;
-            --line: #dbe3ee;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --green: #15803d;
-            --green-soft: #dcfce7;
-            --red: #b91c1c;
-            --red-soft: #fee2e2;
-            --blue: #2563eb;
-            --blue-soft: #dbeafe;
+            --ink: #e6edf7;
+            --muted: #9aa8bc;
+            --line: #2a3548;
+            --panel: rgba(15, 23, 35, 0.9);
+            --panel-strong: #111a29;
+            --ok-fg: #54d299;
+            --ok-bg: rgba(34, 197, 94, 0.16);
+            --down-fg: #ff8b8b;
+            --down-bg: rgba(239, 68, 68, 0.16);
+            --open: #129c52;
+            --extend: #2368e8;
+            --kill: #dc2626;
         }
+
         * { box-sizing: border-box; }
+
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-            color: var(--text);
-            background: var(--bg);
-            padding: 24px 18px 36px;
+            color: var(--ink);
+            font-family: "Plus Jakarta Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            background:
+                radial-gradient(900px 560px at 8% -16%, rgba(59, 130, 246, 0.2), transparent 60%),
+                radial-gradient(900px 560px at 100% -18%, rgba(16, 185, 129, 0.12), transparent 62%),
+                linear-gradient(160deg, #060b14, #0a1320 55%, #0d1524);
         }
-        .wrap { max-width: 1240px; margin: 0 auto; }
+
+        .wrap {
+            width: min(1220px, calc(100vw - 34px));
+            margin: 0 auto;
+            padding: 28px 0 40px;
+        }
+
         .hero {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: flex-start;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            margin-bottom: 20px;
+            padding: 20px 22px;
+            border-radius: 20px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 14px 36px rgba(2, 6, 23, 0.42);
         }
-        h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 4vw, 2.8rem); }
-        .sub { margin: 0; color: var(--muted); font-size: 1.05rem; }
-        .top-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .hero h1 {
+            margin: 0 0 6px;
+            font-size: 2rem;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+        }
+
+        .sub {
+            margin: 0;
+            max-width: 70ch;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
         .flash {
-            margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid transparent;
-            font-weight: 600;
             display: none;
+            margin-top: 13px;
+            padding: 11px 13px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-strong);
+            font-weight: 600;
         }
-        .flash.ok {
-            display: block;
-            color: var(--green);
-            background: var(--green-soft);
-            border-color: #bbf7d0;
-        }
+
+        .flash.ok,
         .flash.err {
             display: block;
-            color: var(--red);
-            background: var(--red-soft);
-            border-color: #fecaca;
         }
+
+        .flash.ok {
+            border-color: rgba(34, 197, 94, 0.36);
+            background: rgba(34, 197, 94, 0.14);
+            color: #86efac;
+        }
+
+        .flash.err {
+            border-color: rgba(239, 68, 68, 0.36);
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+        }
+
+        .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
         .btn {
-            border: 1px solid var(--line);
-            background: var(--surface);
-            color: var(--text);
-            border-radius: 14px;
-            padding: 14px 18px;
-            font-weight: 600;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            min-width: 152px;
-            cursor: pointer;
-            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 10px 15px;
+            border: 1px solid transparent;
+            font-weight: 700;
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
         }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
         .btn.refresh {
-            background: var(--blue);
+            background: #2368e8;
+            border-color: #2368e8;
             color: #fff;
-            border-color: var(--blue);
         }
-        .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+
+        .btn:not(.refresh) {
+            background: var(--panel-strong);
+            border-color: var(--line);
+            color: var(--ink);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+            gap: 18px;
+        }
+
         .panel {
-            background: var(--surface);
+            background: var(--panel);
             border: 1px solid var(--line);
             border-radius: 20px;
             padding: 18px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+            box-shadow: 0 12px 28px rgba(2, 6, 23, 0.36);
         }
-        .panel h2 { margin: 0 0 12px; font-size: 1.35rem; }
-        .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+
+        .panel h2 {
+            margin: 0 0 14px;
+            font-size: 1.48rem;
+            letter-spacing: -0.01em;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
         .inst {
-            background: var(--surface-alt);
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 16px;
-            min-height: 240px;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            min-height: 222px;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--panel-strong);
+            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.28);
         }
-        .inst-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-        .name { margin: 0; font-size: 1.35rem; }
-        .state { color: #166534; background: var(--green-soft); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
-        .state.down { color: var(--red); background: var(--red-soft); }
-        .ttlbox { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface); }
-        .k { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        .v { font-size: 1.25rem; font-weight: 800; margin-top: 6px; }
-        .tags { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tag { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--muted); background: var(--surface); }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
-        .action { border: 0; border-radius: 14px; padding: 13px 16px; font-weight: 800; cursor: pointer; }
-        .open { background: var(--green); color: #fff; }
-        .extend { background: var(--blue); color: #fff; }
-        .kill { background: var(--red); color: #fff; }
+
+        .inst-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .name {
+            margin: 0;
+            font-size: 1.22rem;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .state {
+            white-space: nowrap;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--ok-fg);
+            background: var(--ok-bg);
+        }
+
+        .state.down {
+            color: var(--down-fg);
+            background: var(--down-bg);
+        }
+
+        .ttlbox {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+            background: #0c1625;
+        }
+
+        .k {
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+        }
+
+        .v {
+            margin-top: 4px;
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            word-break: break-word;
+        }
+
+        .actions {
+            margin-top: auto;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .action {
+            min-height: 40px;
+            border: 0;
+            border-radius: 12px;
+            padding: 10px 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .action.open {
+            grid-column: 1 / -1;
+            background: var(--open);
+        }
+
+        .action.extend {
+            background: var(--extend);
+        }
+
+        .action.kill {
+            background: var(--kill);
+        }
+
         .leader {
             width: 100%;
             border-collapse: collapse;
-            overflow: hidden;
+            border: 1px solid var(--line);
             border-radius: 14px;
+            overflow: hidden;
+            background: #0f1827;
         }
-        .leader th, .leader td {
-            padding: 12px 10px;
+
+        .leader th,
+        .leader td {
+            padding: 12px;
             border-bottom: 1px solid var(--line);
             text-align: left;
+            vertical-align: top;
         }
-        .leader th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; }
-        .leader tr:last-child td { border-bottom: 0; }
+
+        .leader th {
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .leader tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .empty-state {
+            border: 1px dashed var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            color: var(--muted);
+            background: #0d1624;
+        }
+
         @media (max-width: 980px) {
-            .grid { grid-template-columns: 1fr; }
-            .cards { grid-template-columns: 1fr; }
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
         }
-    </style>
+    {% endraw %}</style>
 </head>
 <body>
     <div class=\"wrap\">
         <div class=\"hero\">
             <div>
-                <h1>Team Instances Dashboard</h1>
-                <p class="sub">Team: {{ team_name|e }}. Manage running instances, TTL, and lifecycle actions from a single panel.</p>
-                <div id=\"actionMessage\" class=\"flash{% if initial_message %} {{ initial_kind }}{% endif %}\">{{ initial_message|e }}</div>
+                <h1>Instance Control Center</h1>
+                <p class="sub">Team: {{ team_name|e }}. Fast controls, clear status, and clean operations.</p>
+
+                <div id="actionMessage" class="flash{% if initial_message %} {{ initial_kind }}{% endif %}">{{ initial_message|e }}</div>
             </div>
             <div class=\"top-actions\">
                 <a class=\"btn\" href=\"/challenges\">Back to Challenges</a>
@@ -187,9 +359,9 @@ UI_TEMPLATE = """
             </section>
 
             <section class=\"panel\">
-                <h2>Live Activity Leaderboard</h2>
+                <h2>Live Activity</h2>
                 <table class=\"leader\">
-                    <thead><tr><th>Rank</th><th>Team</th><th>Active</th><th>Starts</th><th>Stops</th><th>Expired</th></tr></thead>
+                    <thead><tr><th>Team</th><th>Active Instances</th></tr></thead>
                     <tbody id=\"leaderboard\"></tbody>
                 </table>
             </section>
@@ -277,6 +449,11 @@ UI_TEMPLATE = """
             const body = document.getElementById('instances');
             body.innerHTML = '';
 
+            if (!(data.instances || []).length) {
+                body.innerHTML = '<div class="empty-state">No active instances right now.</div>';
+                return;
+            }
+
             (data.instances || []).forEach((inst) => {
                 const challengeRef = inst.challenge_ref || inst.challenge_name || String(inst.challenge_id || '');
                 const ttlSeconds = Number(inst.ttl_remaining_sec || 0);
@@ -288,11 +465,9 @@ UI_TEMPLATE = """
                         <h3 class=\"name\">${inst.challenge_name || '-'}</h3>
                         <span class=\"state ${ttlSeconds > 0 ? '' : 'down'}\">${ttlSeconds > 0 ? 'UP' : 'DOWN'}</span>
                     </div>
-                    <p style=\"margin:0;color:var(--muted);\">${ttlSeconds > 0 ? 'Container UP and tracked for your team.' : 'Container is not running right now.'}</p>
                     <div class=\"ttlbox\"><div class=\"k\">TTL Remaining</div><div class=\"v\">${fmt(ttlSeconds)}</div></div>
-                    <div class=\"tags\"><span class=\"tag\">${inst.url || '-'}</span></div>
                     <div class=\"actions\">
-                        <a class=\"action open\" href=\"${inst.url || '#'}\" target=\"_blank\" rel=\"noopener\">Open Web</a>
+                        <a class=\"action open\" href=\"${inst.open_href || '#'}\" ${inst.open_href ? 'target=\"_blank\" rel=\"noopener\"' : ''}>${inst.open_label || 'Open Access'}</a>
                         <a class=\"action extend\" href=\"/plugins/orchestrator/extend-ui?challenge_ref=${encodeURIComponent(challengeRef)}\">Add 30m</a>
                         <a class=\"action kill\" href=\"/plugins/orchestrator/stop-ui?challenge_ref=${encodeURIComponent(challengeRef)}\">Kill Container</a>
                     </div>
@@ -308,9 +483,16 @@ UI_TEMPLATE = """
             const body = document.getElementById('leaderboard');
             body.innerHTML = '';
 
-            (data.rows || []).forEach((row, idx) => {
+            if (!(data.rows || []).length) {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${idx + 1}</td><td>${row.team_name || row.team_id}</td><td>${row.active_instances}</td><td>${row.starts_total}</td><td>${row.stops_total}</td><td>${row.expired_total}</td>`;
+                tr.innerHTML = '<td colspan="2" style="color:var(--muted);">No active instances yet.</td>';
+                body.appendChild(tr);
+                return;
+            }
+
+            (data.rows || []).forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.team_name || row.team_id}</td><td>${row.active_instances}</td>`;
                 body.appendChild(tr);
             });
         }
@@ -417,7 +599,15 @@ class OrchestrationPlugin:
     def _challenge_access_hint(self, challenge) -> Dict[str, str]:
         """Read lightweight access hints from challenge.yml when available."""
         challenge_dir = self._resolve_challenge_dir_from_name(str(getattr(challenge, "name", "") or ""))
-        return load_access_hint_from_dir(challenge_dir) if challenge_dir else {"mode": "auto", "ssh_user": "", "instructions": "", "container_port": "", "type": ""}
+        return load_access_hint_from_dir(challenge_dir) if challenge_dir else {
+            "mode": "auto",
+            "ssh_user": "",
+            "ssh_password": "",
+            "instructions": "",
+            "hint": "",
+            "container_port": "",
+            "type": "",
+        }
 
     def _build_access_methods(self, challenge, url: str, port: Any, stdout: str) -> List[Dict[str, str]]:
         """Build access methods for front-end rendering without hardcoding challenge categories."""
@@ -548,6 +738,13 @@ class OrchestrationPlugin:
                     break
 
         return current_ttl
+
+    def _count_team_instances_for_challenge(self, team_id: str, challenge_id: int) -> int:
+        count = 0
+        for inst in self.instance_tracker.get_team_instances(str(team_id)):
+            if int(inst.get("challenge_id", -1)) == int(challenge_id):
+                count += 1
+        return count
 
     def _resolve_team_id(self) -> str:
         """Resolve current user's team id in a CTFd-version-tolerant way."""
@@ -680,11 +877,11 @@ class OrchestrationPlugin:
                         400,
                     )
 
-                # Check team quota
+                # Check team/global quota
                 active_count = self.instance_tracker.count_active_instances(
                     team_id
                 )
-                max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 3))
+                max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 10))
                 if active_count >= max_active:
                     return (
                         jsonify(
@@ -693,6 +890,23 @@ class OrchestrationPlugin:
                                 "error": "team_quota_exceeded",
                                 "active": active_count,
                                 "max": max_active,
+                            }
+                        ),
+                        409,
+                    )
+
+                # Check per-challenge quota for this team
+                challenge_active_count = self._count_team_instances_for_challenge(team_id, int(challenge.id))
+                challenge_max_active = int(os.getenv("ORCHESTRATOR_TEAM_CHALLENGE_MAX_ACTIVE", 2))
+                if challenge_active_count >= challenge_max_active:
+                    return (
+                        jsonify(
+                            {
+                                "ok": False,
+                                "error": "challenge_quota_exceeded",
+                                "challenge": challenge.name,
+                                "active": challenge_active_count,
+                                "max": challenge_max_active,
                             }
                         ),
                         409,
@@ -976,6 +1190,47 @@ class OrchestrationPlugin:
                     port = int(row.get("port", 0) or 0)
                     ttl_remaining_sec = max(0, int(row.get("ttl_remaining_sec", 0) or 0))
                     challenge_ref = str(challenge_obj.id if challenge_obj else challenge_name)
+                    instance_url = f"http://{player_host}:{port}" if port else ""
+
+                    open_href = instance_url
+                    open_label = "Open Access"
+                    connection_display = instance_url
+                    access_mode = "web"
+                    access_user = ""
+                    access_password = ""
+                    access_hint = ""
+
+                    if challenge_obj:
+                        access_hint_data = self._challenge_access_hint(challenge_obj)
+                        access_user = str(access_hint_data.get("ssh_user", "") or "").strip()
+                        access_password = str(access_hint_data.get("ssh_password", "") or "").strip()
+                        access_hint = str(access_hint_data.get("hint", "") or "").strip()
+
+                        access_methods = self._build_access_methods(
+                            challenge_obj,
+                            instance_url,
+                            port,
+                            "",
+                        )
+                        open_href = f"/plugins/orchestrator/launch?challenge_id={int(challenge_obj.id)}"
+                        if access_methods:
+                            primary = str(access_methods[0].get("type", "")).strip().lower()
+                            if primary == "web":
+                                open_href = str(access_methods[0].get("value", "") or open_href)
+                                open_label = "Open Web Service"
+                                access_mode = "web"
+                                connection_display = str(access_methods[0].get("value", "") or instance_url)
+                            elif primary == "ssh":
+                                open_label = "View SSH Instructions"
+                                access_mode = "ssh"
+                                connection_display = str(access_methods[0].get("linux", "") or instance_url)
+                            elif primary == "instruction":
+                                open_label = "View Instructions"
+                                access_mode = "instruction"
+                                connection_display = "Instructions available"
+                        if access_mode == "ssh" and not open_href:
+                            open_href = f"/plugins/orchestrator/launch?challenge_id={int(challenge_obj.id)}"
+
                     instances.append(
                         {
                             "team_id": str(team_id),
@@ -983,7 +1238,14 @@ class OrchestrationPlugin:
                             "challenge_name": challenge_obj.name if challenge_obj else challenge_name,
                             "challenge_ref": challenge_ref,
                             "port": port,
-                            "url": f"http://{player_host}:{port}" if port else "",
+                            "url": instance_url,
+                            "open_href": open_href,
+                            "open_label": open_label,
+                            "connection_display": connection_display,
+                            "access_mode": access_mode,
+                            "ssh_user": access_user,
+                            "ssh_password": access_password,
+                            "access_hint": access_hint,
                             "state": state or "running",
                             "ttl_remaining_sec": ttl_remaining_sec,
                             "expired": ttl_remaining_sec <= 0,
@@ -1034,16 +1296,34 @@ class OrchestrationPlugin:
         @bp.route("/leaderboard/live", methods=["GET"])
         @authed_only
         def live_leaderboard():
-            """Real-time activity leaderboard from instance lifecycle events."""
-            rows = self.instance_tracker.leaderboard()
-            team_ids = [r["team_id"] for r in rows]
+            """Live active-instance counts grouped by team."""
+            counts: Dict[str, int] = {}
+            for row in self._current_status_rows():
+                state = str(row.get("state", "")).strip().lower()
+                if state != "running":
+                    continue
+
+                team_id = str(row.get("team", "")).strip()
+                if not team_id:
+                    continue
+
+                counts[team_id] = counts.get(team_id, 0) + 1
+
+            team_ids = [int(team_id) for team_id in counts.keys() if team_id.isdigit()]
             names = {
                 str(t.id): t.name
                 for t in Teams.query.filter(Teams.id.in_(team_ids)).all()
             } if team_ids else {}
 
-            for row in rows:
-                row["team_name"] = names.get(str(row["team_id"]), str(row["team_id"]))
+            rows = [
+                {
+                    "team_id": team_id,
+                    "team_name": names.get(team_id, team_id),
+                    "active_instances": active,
+                }
+                for team_id, active in counts.items()
+            ]
+            rows.sort(key=lambda r: (-int(r["active_instances"]), str(r["team_name"]).lower()))
 
             return jsonify({"ok": True, "rows": rows})
 
@@ -1077,10 +1357,18 @@ class OrchestrationPlugin:
                 )
 
             active_count = self.instance_tracker.count_active_instances(team_id)
-            max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 3))
+            max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 10))
             if active_count >= max_active:
                 return (
                     f"Quota exceeded: {active_count}/{max_active} active instances for your team.",
+                    409,
+                )
+
+            challenge_active_count = self._count_team_instances_for_challenge(team_id, int(challenge.id))
+            challenge_max_active = int(os.getenv("ORCHESTRATOR_TEAM_CHALLENGE_MAX_ACTIVE", 2))
+            if challenge_active_count >= challenge_max_active:
+                return (
+                    f"Challenge quota exceeded for {challenge.name}: {challenge_active_count}/{challenge_max_active} active instances.",
                     409,
                 )
 
@@ -1173,6 +1461,36 @@ class OrchestrationPlugin:
             web_method = next((m for m in access_methods if m.get("type") == "web"), None)
             redirect_url = web_method.get("value", "") if web_method else ""
             launch_description = self._build_launch_description(challenge, access_methods)
+            access_hint = self._challenge_access_hint(challenge)
+
+            credentials_block = ""
+            cred_user = str(access_hint.get("ssh_user", "") or "").strip()
+            cred_password = str(access_hint.get("ssh_password", "") or "").strip()
+            if cred_user or cred_password:
+                user_html = html.escape(cred_user) if cred_user else "-"
+                pass_html = html.escape(cred_password) if cred_password else "-"
+                credentials_block = f"""
+<details class=\"method reveal\">
+    <summary>Credentials (click to reveal)</summary>
+    <div class=\"reveal-body\">
+        <div class=\"kv-row\"><strong>Username:</strong> <code>{user_html}</code></div>
+        <div class=\"kv-row\"><strong>Password:</strong> <code>{pass_html}</code></div>
+    </div>
+</details>
+"""
+
+            hint_block = ""
+            hint_text = str(access_hint.get("hint", "") or "").strip()
+            if hint_text:
+                hint_block = f"""
+<details class=\"method reveal hint\">
+    <summary>Need a nudge? (click to reveal hint)</summary>
+    <div class=\"reveal-body\">
+        <pre>{html.escape(hint_text)}</pre>
+    </div>
+</details>
+"""
+
 
             status_row = self._find_status_row(str(team_id), challenge.name)
             status_running = bool(
@@ -1188,6 +1506,10 @@ class OrchestrationPlugin:
             if not status_running:
                 status_ttl_remaining = 0
 
+            relaunch_href = f"/plugins/orchestrator/launch?challenge_id={int(challenge.id)}"
+            relaunch_label = "Relaunch Instance" if status_running else "Start Instance"
+            relaunch_block = f'<a class="btn btn-primary" id="relaunchBtn" href="{relaunch_href}" style="margin-right:8px;">{relaunch_label}</a>'
+
             method_blocks = []
             for idx, method in enumerate(access_methods):
                 mtype = method.get("type")
@@ -1201,26 +1523,40 @@ class OrchestrationPlugin:
 """
                     )
                 elif mtype == "ssh":
-                    linux_cmd = html.escape(method.get("linux", ""))
-                    windows_cmd = html.escape(method.get("windows", ""))
-                    method_blocks.append(
-                        f"""
+                    linux_raw = str(method.get("linux", "") or "")
+                    windows_raw = str(method.get("windows", "") or "")
+                    linux_cmd = html.escape(linux_raw)
+                    windows_cmd = html.escape(windows_raw)
+                    if linux_raw.strip() == windows_raw.strip():
+                        method_blocks.append(
+                            f"""
 <div class=\"method\">
     <h3>SSH Access</h3>
-    <p class=\"note\">Use one of these commands:</p>
+    <p class=\"note\">Click the command card to copy it.</p>
     <div class=\"cmd-row\">
-        <label>Linux/macOS</label>
-        <pre id=\"cmd-linux-{idx}\">{linux_cmd}</pre>
-        <button class=\"btn btn-secondary\" onclick=\"copyCmd('cmd-linux-{idx}')\">Copy</button>
-    </div>
-    <div class=\"cmd-row\">
-        <label>Windows (PowerShell)</label>
-        <pre id=\"cmd-win-{idx}\">{windows_cmd}</pre>
-        <button class=\"btn btn-secondary\" onclick=\"copyCmd('cmd-win-{idx}')\">Copy</button>
+        <label>Command</label>
+        <div class=\"cmd-copy-card\" role=\"button\" tabindex=\"0\" aria-label=\"Copy SSH command\" data-copy=\"{linux_cmd}\">{linux_cmd}<span class=\"copy-icon\" aria-hidden=\"true\"></span><span class=\"copy-ok\">COPIED</span></div>
     </div>
 </div>
 """
-                    )
+                        )
+                    else:
+                        method_blocks.append(
+                            f"""
+<div class=\"method\">
+    <h3>SSH Access</h3>
+    <p class=\"note\">Click either command card to copy it.</p>
+    <div class=\"cmd-row\">
+        <label>Linux/macOS</label>
+        <div class=\"cmd-copy-card\" role=\"button\" tabindex=\"0\" aria-label=\"Copy Linux command\" data-copy=\"{linux_cmd}\">{linux_cmd}<span class=\"copy-icon\" aria-hidden=\"true\"></span><span class=\"copy-ok\">COPIED</span></div>
+    </div>
+    <div class=\"cmd-row\">
+        <label>Windows (PowerShell)</label>
+        <div class=\"cmd-copy-card\" role=\"button\" tabindex=\"0\" aria-label=\"Copy Windows command\" data-copy=\"{windows_cmd}\">{windows_cmd}<span class=\"copy-icon\" aria-hidden=\"true\"></span><span class=\"copy-ok\">COPIED</span></div>
+    </div>
+</div>
+"""
+                        )
                 else:
                     method_blocks.append(
                         f"""
@@ -1240,17 +1576,17 @@ class OrchestrationPlugin:
     <title>Instance Ready</title>
     <style>
         :root {{
-            --bg: #f4f7fb;
-            --card: #ffffff;
-            --surface: #f8fafc;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --ok: #15803d;
-            --bad: #b91c1c;
+            --bg: #070d16;
+            --card: #101a2a;
+            --surface: #0d1624;
+            --text: #e6edf7;
+            --muted: #9aa8bc;
+            --ok: #22c55e;
+            --bad: #ef4444;
             --btn-primary: #2563eb;
-            --btn-secondary: #ffffff;
-            --ring: rgba(37, 99, 235, 0.14);
-            --line: #dbe3ee;
+            --btn-secondary: #0f1a2a;
+            --ring: rgba(59, 130, 246, 0.18);
+            --line: #2a3548;
         }}
 
         * {{ box-sizing: border-box; }}
@@ -1259,7 +1595,10 @@ class OrchestrationPlugin:
             min-height: 100vh;
             display: grid;
             place-items: center;
-            background: var(--bg);
+            background:
+                radial-gradient(800px 520px at 8% -10%, rgba(59,130,246,0.2), transparent 60%),
+                radial-gradient(860px 540px at 100% -15%, rgba(16,185,129,0.12), transparent 62%),
+                var(--bg);
             font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
             color: var(--text);
             padding: 24px;
@@ -1270,7 +1609,7 @@ class OrchestrationPlugin:
             background: var(--card);
             border: 1px solid var(--line);
             border-radius: 18px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.42);
             overflow: hidden;
         }}
 
@@ -1343,15 +1682,162 @@ class OrchestrationPlugin:
 
         .method h3 {{ margin: 0 0 8px; }}
 
+        .reveal {{
+            padding: 0;
+            overflow: hidden;
+            background: #0f1a2a;
+        }}
+
+        .reveal summary {{
+            list-style: none;
+            cursor: pointer;
+            padding: 14px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #14243a, #1c2d45);
+        }}
+
+        .reveal.hint summary {{
+            background: linear-gradient(135deg, #2a1f10, #302515);
+        }}
+
+        .reveal summary::-webkit-details-marker {{ display: none; }}
+
+        .reveal-body {{
+            border-top: 1px solid var(--line);
+            padding: 12px 14px 14px;
+        }}
+
+        .kv-row {{ margin-bottom: 8px; }}
+        .kv-row code {{
+            background: #f1f5f9;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }}
+
+        .reveal-card {{
+            padding: 0;
+            overflow: hidden;
+        }}
+
+        .reveal-toggle {{
+            width: 100%;
+            border: 0;
+            background: linear-gradient(135deg, #f8fafc, #eef2ff);
+            color: var(--text);
+            font-weight: 700;
+            text-align: left;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }}
+
+        .reveal-card.hint .reveal-toggle {{
+            background: linear-gradient(135deg, #fff7ed, #fffbeb);
+        }}
+
+        .reveal-cta {{
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }}
+
+        .reveal-content {{
+            border-top: 1px solid var(--line);
+            padding: 12px 14px 14px;
+            background: #0f1a2a;
+        }}
+
+        .kv-row {{ margin-bottom: 8px; }}
+        .kv-row code {{
+            background: #0b1524;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }}
+
         .cmd-row {{ margin-bottom: 10px; }}
         .cmd-row label {{ color: var(--muted); font-size: 0.85rem; display: block; margin-bottom: 6px; }}
         pre {{
             margin: 0 0 8px;
-            background: #f8fafc;
+            background: #0a1524;
             border: 1px solid var(--line);
             border-radius: 8px;
             padding: 10px;
             overflow-x: auto;
+        }}
+
+        .cmd-copy-card {{
+            position: relative;
+            background: #0a1524;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px 12px 28px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.98rem;
+            cursor: pointer;
+            user-select: all;
+            word-break: break-all;
+            transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+        }}
+
+        .cmd-copy-card:hover {{
+            border-color: #3d5f93;
+            background: #111f34;
+        }}
+
+        .cmd-copy-card.copied {{
+            border-color: #22c55e;
+            background: #0f2318;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18) inset;
+        }}
+
+        .cmd-copy-card:focus {{
+            outline: 2px solid #9db4df;
+            outline-offset: 1px;
+        }}
+
+        .copy-icon {{
+            position: absolute;
+            right: 10px;
+            bottom: 8px;
+            width: 14px;
+            height: 14px;
+            border: 1.6px solid #94a3b8;
+            border-radius: 2px;
+            pointer-events: none;
+        }}
+
+        .copy-icon::before {{
+            content: "";
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            left: -5px;
+            top: -5px;
+            border: 1.6px solid #64748b;
+            border-radius: 2px;
+        }}
+
+        .copy-ok {{
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            color: #86efac;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            opacity: 0;
+            transform: translateY(-2px);
+            transition: opacity 0.14s ease, transform 0.14s ease;
+            pointer-events: none;
+        }}
+
+        .cmd-copy-card.copied .copy-ok {{
+            opacity: 1;
+            transform: translateY(0);
         }}
 
         .btn {{
@@ -1416,19 +1902,86 @@ class OrchestrationPlugin:
 
             <p class=\"note\" id=\"launchDescription\">{html.escape(launch_description)}</p>
 
+            {credentials_block}
+
+            {hint_block}
+
             {''.join(method_blocks)}
 
-            <a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a>
+            {relaunch_block}<a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a>
 
             <p class=\"tiny\" id=\"autoLine\">Auto-redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
         </div>
     </section>
 
     <script>
-        function copyCmd(id) {{
-            const text = document.getElementById(id).innerText;
-            navigator.clipboard.writeText(text).catch(() => {{}});
+        function toggleReveal(contentId) {{
+            const content = document.getElementById(contentId);
+            const button = document.getElementById(contentId + '-btn');
+            if (!content || !button) return;
+
+            const hidden = content.hasAttribute('hidden');
+            if (hidden) {{
+                content.removeAttribute('hidden');
+                button.setAttribute('aria-expanded', 'true');
+            }} else {{
+                content.setAttribute('hidden', 'hidden');
+                button.setAttribute('aria-expanded', 'false');
+            }}
         }}
+
+        function copyCmdText(text) {{
+            const value = String(text || '');
+            if (!value) return Promise.resolve(false);
+
+            if (navigator.clipboard && window.isSecureContext) {{
+                return navigator.clipboard.writeText(value)
+                    .then(() => true)
+                    .catch(() => false);
+            }}
+
+            // Fallback for non-secure origins (common on local VM HTTP setups).
+            const area = document.createElement('textarea');
+            area.value = value;
+            area.setAttribute('readonly', 'readonly');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            area.style.pointerEvents = 'none';
+            document.body.appendChild(area);
+            area.select();
+
+            let ok = false;
+            try {{
+                ok = document.execCommand('copy');
+            }} catch (_e) {{
+                ok = false;
+            }} finally {{
+                document.body.removeChild(area);
+            }}
+
+            return Promise.resolve(ok);
+        }}
+
+        function markCopied(card, ok) {{
+            if (!card || !ok) return;
+            card.classList.add('copied');
+            window.setTimeout(() => card.classList.remove('copied'), 900);
+        }}
+
+        document.addEventListener('click', (ev) => {{
+            const card = ev.target.closest('.cmd-copy-card');
+            if (!card) return;
+            copyCmdText(card.getAttribute('data-copy') || card.innerText || '').then((ok) => markCopied(card, ok));
+        }});
+
+        document.addEventListener('keydown', (ev) => {{
+            const card = ev.target.closest('.cmd-copy-card');
+            if (!card) return;
+            if (ev.key === 'Enter' || ev.key === ' ') {{
+                ev.preventDefault();
+                copyCmdText(card.getAttribute('data-copy') || card.innerText || '').then((ok) => markCopied(card, ok));
+            }}
+        }});
 
         const statusEndpoint = '/plugins/orchestrator/instance-status?challenge_id={challenge.id}';
         const statusDot = document.getElementById('statusDot');
@@ -1781,3 +2334,4 @@ class OrchestrationPlugin:
             return self._is_spawnable_challenge_name(challenge_name)
         except Exception:
             return False
+

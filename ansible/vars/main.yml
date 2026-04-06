@@ -20,7 +20,8 @@ orchestrator_signing_secret: "ChangeMe-Orchestrator-Signing-Secret"
 orchestrator_ctfd_webhook_token: "ChangeMe-CTFd-Webhook-Token"
 orchestrator_rate_limit_per_min: 60
 orchestrator_team_rate_limit_per_min: 30
-orchestrator_team_max_active: 3
+orchestrator_team_max_active: 10
+orchestrator_team_challenge_max_active: 2
 orchestrator_signature_ttl_sec: 300
 orchestrator_audit_log: "/var/log/ctf/orchestrator-audit.log"
 orchestrator_api_bind: "127.0.0.1"
