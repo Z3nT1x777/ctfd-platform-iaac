@@ -102,7 +102,7 @@ The template ships with security defaults enabled and keeps the sensitive parts 
 
 These are useful, but they are not required to understand or use the baseline template:
 
-- [docs/WORKFLOW_PRIORITES.md](docs/WORKFLOW_PRIORITES.md)
+- [docs/WORKFLOW_PRIORITIES.md](docs/WORKFLOW_PRIORITIES.md)
 - [docs/SECURITY_BASELINE.md](docs/SECURITY_BASELINE.md)
 - [docs/VAULT_SETUP.md](docs/VAULT_SETUP.md)
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
