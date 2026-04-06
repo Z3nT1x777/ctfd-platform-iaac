@@ -6,7 +6,7 @@ This matrix defines what belongs in the baseline template versus what should liv
 
 - Core Template: required for a reusable baseline and should stay enabled.
 - Optional Template Module: useful for many teams, but should stay configurable.
-- Custom Repository Only: organization-specific customizations, operational shortcuts, or branding.
+- Custom Repository Only: organization-specific customizations, experiments, or branding.
 
 ## Matrix
 
@@ -23,7 +23,7 @@ This matrix defines what belongs in the baseline template versus what should liv
 | Kubernetes extension docs | Advanced path, not baseline | Optional Template Module | Keep documented as optional |
 | Direct DB patch script (`scripts/fix_ctfd_challenge_links.py`) | Legacy operational shortcut | Excluded from baseline template | Keep only in custom/operator repo if needed |
 | Legacy SQL patch (`scripts/fix_ctfd_links.sql`) | Legacy/manual fix | Excluded from baseline template | Keep only in custom/operator repo if needed |
-| Team-specific runbooks | Operator-specific | Custom Repository Only | Move to custom repo docs |
+| Team-specific runbooks | Operator-specific | Custom Repository Only | Keep in custom repo docs |
 
 ## Baseline Acceptance Criteria
 

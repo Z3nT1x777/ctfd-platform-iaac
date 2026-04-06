@@ -10,11 +10,11 @@ This repository provides an end-to-end Infrastructure as Code template for a sel
 
 Template baseline intent:
 
-- This repository is designed to stay reusable for new teams.
-- Keep generic platform capabilities in this baseline.
-- Move team-specific branding or operational shortcuts to a separate custom repository.
+- Reusable starting point for new teams and new deployments.
+- Keep generic platform capabilities in the baseline.
+- Move team-specific branding, experiments, and operational shortcuts to a separate custom repository.
 
-Core capabilities already implemented:
+Included baseline capabilities:
 
 - **Infrastructure:** Reproducible VM provisioning with Vagrant and Ansible
 - **Platform:** CTFd deployment on Docker Compose with centralized configuration
@@ -83,7 +83,7 @@ Detailed guide: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
 
 ### Overview: 10 Security Controls ✅
 
-All the following security controls are implemented and active in production:
+The baseline ships with the following security controls enabled by default:
 
 | Control | Implementation | Development | Production | Status |
 |---------|----------------|-------------|------------|--------|
@@ -95,7 +95,7 @@ All the following security controls are implemented and active in production:
 | **6. Audit Logging** | JSON centralized logging to `/var/log/ctf/orchestrator-audit.log` | All events tracked | Compliance-ready queries | ✅ |
 | **7. CTFd Webhook** | `POST /ctfd/event` endpoint with `X-CTFd-Webhook-Token` validation | Webhook ready | Integrated with plugin flow | ✅ |
 | **8. Localhost-Only Binding** | API binds to 127.0.0.1:18181 (internal only, nginx proxy external) | Defense in depth | nginx reverse proxy on 0.0.0.0:8181 | ✅ |
-| **9. Ansible Vault** | Encrypted secret overrides for production credentials | Optional (defaults OK) | Required - all secrets in vault.yml | ✅ |
+| **9. Ansible Vault** | Encrypted secret overrides for production credentials | Optional (defaults OK) | Required for real deployments | ✅ |
 | **10. Security Preflight CI** | Detects development defaults in PRs, fails on ChangeMe-* warnings | GitHub Actions | Blocks merge if insecure defaults | ✅ |
 
 ### Setup for Development vs. Production
@@ -106,7 +106,7 @@ git clone https://github.com/USERNAME/ctfd-platform-template.git
 cd ctfd-platform-template
 vagrant up --provision
 # Default credentials are safe for local VM testing
-# No vault needed, all defaults from ansible/vars/main.yml
+# No vault needed, all defaults come from ansible/vars/main.yml
 ```
 
 **Production (secure deployment):**
@@ -130,7 +130,7 @@ SECURITY_STRICT=1 python scripts/security-preflight.py
 ```bash
 # GitHub Actions / GitLab CI: Pass vault password via secrets
 # Set ANSIBLE_VAULT_PASSWORD environment variable
-# See docs/VAULT_SETUP.md for complete CI/CD integration guide
+# See docs/VAULT_SETUP.md for the CI/CD integration guide
 ```
 
 ### More Information
@@ -165,8 +165,8 @@ Use a two-repository model:
 
 Practical rule:
 
-- If a change helps most teams, push it to template.
-- If a change is team-specific or high-risk customization, keep it in custom.
+- If a change helps most teams, push it to the template.
+- If a change is team-specific or high-risk customization, keep it in the custom repository.
 
 ### Key Feature Documentation
 
