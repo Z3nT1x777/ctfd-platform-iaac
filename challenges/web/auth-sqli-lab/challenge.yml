@@ -1,0 +1,12 @@
+name: auth-sqli-lab
+category: web
+value: 200
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Login form challenge focused on SQL injection authentication bypass.
+  Objective: obtain an admin session and extract the flag.
+
+flag: CTF{sqli_auth_bypass_master}
+port: 5011

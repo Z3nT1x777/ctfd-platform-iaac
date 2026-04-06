@@ -1,0 +1,9 @@
+services:
+  auth-sqli-lab:
+    build: .
+    container_name: auth-sqli-lab
+    ports:
+      - "5011:5000"
+    environment:
+      - FLAG=CTF{sqli_auth_bypass_master}
+    restart: unless-stopped

@@ -1,0 +1,12 @@
+name: metro-memory-trail
+category: osint
+value: 150
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Static OSINT challenge with a visual clue trail.
+  Analyze the page assets and combine clues to recover the target location flag.
+
+flag: CTF{paris_bastille_1989}
+port: 5012

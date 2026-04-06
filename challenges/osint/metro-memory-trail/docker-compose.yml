@@ -1,0 +1,7 @@
+services:
+  metro-memory-trail:
+    build: .
+    container_name: metro-memory-trail
+    ports:
+      - "5012:5000"
+    restart: unless-stopped
