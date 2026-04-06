@@ -485,5 +485,5 @@ environment:
 
 - [docs/PLAYER_INSTANCE_ORCHESTRATOR.md](PLAYER_INSTANCE_ORCHESTRATOR.md) - API reference for orchestrator
 - [docs/VAULT_SETUP.md](VAULT_SETUP.md) - Managing secrets in challenges
-- [challenges/_template](../challenges/_template/) - Template source files
+- [challenges/_templates](../challenges/_templates/) - Template source files
 - [challenges/web/simple-login](../challenges/web/simple-login/) - Example challenge

@@ -1774,16 +1774,20 @@ class OrchestrationPlugin:
             background: #0a1524;
             border: 1px solid var(--line);
             border-radius: 10px;
-            padding: 12px 44px 12px 14px;
+            padding: 15px 48px 15px 14px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-            font-size: 0.98rem;
+            font-size: 1.02rem;
+            font-weight: 600;
             cursor: pointer;
             user-select: all;
-            min-height: 52px;
+            min-height: 56px;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             line-height: 1.35;
             word-break: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
             transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
         }}
 
@@ -1808,9 +1812,9 @@ class OrchestrationPlugin:
             right: 14px;
             top: 50%;
             transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            border: 1.5px solid #9fb0c6;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #9fb0c6;
             border-radius: 3px;
             opacity: 0.95;
             pointer-events: none;
@@ -1818,14 +1822,14 @@ class OrchestrationPlugin:
 
         .copy-ok {{
             position: absolute;
-            right: 34px;
+            right: 40px;
             top: 50%;
             color: #86efac;
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.04em;
             opacity: 0;
-            transform: translateY(calc(-50% - 2px));
+            transform: translateY(-50%);
             transition: opacity 0.14s ease, transform 0.14s ease;
             pointer-events: none;
         }}

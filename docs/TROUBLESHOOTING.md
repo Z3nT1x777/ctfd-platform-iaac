@@ -34,6 +34,51 @@ Expected output: Both services active, both ports listening, /health returns 200
 
 ---
 
+## Operations Command Cookbook
+
+These are high-value commands for day-to-day operations in the custom platform.
+
+### Re-apply Ansible with a quota profile
+
+Use one of these profiles to update orchestrator limits and service config:
+
+```bash
+# small teams
+vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml -e orchestrator_quota_profile=small"
+
+# medium teams
+vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml -e orchestrator_quota_profile=medium"
+
+# large teams
+vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml -e orchestrator_quota_profile=large"
+```
+
+### Re-apply Ansible and restart API in one line
+
+```bash
+vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml -e orchestrator_quota_profile=small && sudo systemctl restart player-instance-api.service"
+```
+
+### Restart CTFd container only
+
+```bash
+vagrant ssh -c "docker restart ctfd"
+```
+
+### Restart full CTFd compose stack
+
+```bash
+vagrant ssh -c "cd /opt/ctf/ctfd && docker compose restart"
+```
+
+### Verify applied quota values
+
+```bash
+vagrant ssh -c "sudo cat /etc/ctf/orchestrator.env | grep -E 'ORCHESTRATOR_TEAM_(MAX_ACTIVE|CHALLENGE_MAX_ACTIVE|RATE_LIMIT_PER_MIN)'"
+```
+
+---
+
 ## Common Issues & Solutions
 
 ### Issue 1: "Connection refused" when testing API

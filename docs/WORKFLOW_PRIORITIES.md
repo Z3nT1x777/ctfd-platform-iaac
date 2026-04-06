@@ -126,7 +126,7 @@ PR description should include:
 
 ### Templates
 
-Available challenge families in `challenges/_template/`:
+Available challenge families in `challenges/_templates/`:
 
 | Family | Type | Docker | Use Case |
 |--------|------|--------|----------|

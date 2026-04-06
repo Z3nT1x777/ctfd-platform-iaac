@@ -1,50 +1,54 @@
 # Custom Repository Workflow (EN)
 
-This workflow keeps a clean baseline template while allowing fast custom development.
+This project uses a single repository workflow centered on `ctfd-platform-custom`.
 
-## Repository Model
+## Branch Model
 
-- Template repository: stable baseline (`ctfd-platform-template`)
-- Custom repository: team-specific product (`ctfd-platform-custom`)
+- `main`: stable branch used for deployment.
+- `feature/*`: short-lived branches for implementation work.
+- `hotfix/*`: urgent fixes that are merged back quickly into `main`.
 
 ## Local Git Remote Setup
 
-Inside your custom local clone:
+Keep one primary remote:
 
 ```bash
 git remote -v
-# origin   -> custom repo
-# upstream -> template repo
+# origin -> https://github.com/<owner>/ctfd-platform-custom.git
 ```
 
-If `upstream` is missing:
+If your local clone still has legacy remotes:
 
 ```bash
-git remote add upstream https://github.com/<owner>/ctfd-platform-template.git
-git fetch upstream --prune
+git remote remove template || true
+git remote remove upstream || true
+git remote remove custom || true
+git remote set-url origin https://github.com/<owner>/ctfd-platform-custom.git
 ```
 
-## Pull Template Updates Into Custom
+## Daily Workflow
 
 ```bash
 git checkout main
-git fetch upstream --prune
-git merge upstream/main
-# or: git rebase upstream/main
+git pull --ff-only origin main
+git checkout -b feature/<short-topic>
+# implement + test
+git commit -m "feat: <summary>"
+git push -u origin feature/<short-topic>
 ```
 
-Then push to your custom repo:
+Open a PR to `main`, run CI checks, and merge when green.
+
+## Release Workflow
 
 ```bash
-git push origin main
+git checkout main
+git pull --ff-only origin main
+git tag -a vX.Y.Z -m "release vX.Y.Z"
+git push origin main --tags
 ```
 
-## Recommended Change Routing
+## Decision Rule
 
-- Generic, reusable improvements: open PR to template repository.
-- Team branding, operations shortcuts, or risky experiments: keep in custom repository.
-
-## Release Rhythm
-
-- Template: slower, quality-gated releases.
-- Custom: faster iteration with selective upstream sync.
+- If a change helps the current platform, keep it here.
+- Avoid maintaining parallel forks for the same runtime.

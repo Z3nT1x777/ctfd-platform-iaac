@@ -1,4 +1,4 @@
-# CTF Platform Template
+# CTF Platform Custom
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Vagrant](https://img.shields.io/badge/Vagrant-2.4%2B-blue)](https://www.vagrantup.com/)
@@ -6,15 +6,9 @@
 
 ## Overview
 
-This repository provides an end-to-end Infrastructure as Code template for a self-hosted CTF platform.
+This repository is the single source of truth for the custom CTF platform deployment and operations.
 
-Template baseline intent:
-
-- Reusable starting point for new teams and new deployments.
-- Keep generic platform capabilities in the baseline.
-- Move team-specific branding, experiments, and operational shortcuts to a separate custom repository.
-
-Included baseline capabilities:
+Included capabilities:
 
 - **Infrastructure:** Reproducible VM provisioning with Vagrant and Ansible
 - **Platform:** CTFd deployment on Docker Compose with centralized configuration
@@ -44,12 +38,10 @@ Included baseline capabilities:
 ## Quick Start
 
 ```bash
-git clone https://github.com/USERNAME/ctfd-platform-template.git
-cd ctfd-platform-template
+git clone https://github.com/USERNAME/ctfd-platform-custom.git
+cd ctfd-platform-custom
 vagrant up --provision
 ```
-
-If you want a fully custom product repo, clone this template first, then point `origin` to your private custom repository and keep the template as `upstream`.
 
 Access points after provisioning:
 
@@ -81,7 +73,7 @@ Detailed guide: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
 
 ## Security Notes
 
-The template ships with security defaults enabled and keeps the sensitive parts configurable.
+The platform ships with security defaults enabled and keeps the sensitive parts configurable.
 
 - HMAC signing, rate limits, instance quotas, and webhook validation are built in.
 - Production secrets are handled through Ansible Vault.
@@ -92,36 +84,32 @@ The template ships with security defaults enabled and keeps the sensitive parts 
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [docs/REPO_CONTENT_GUIDELINES.md](docs/REPO_CONTENT_GUIDELINES.md) | Defines what belongs in public template, private template, or custom-only layers | Maintainers, contributors |
-| [docs/TEMPLATE_SCOPE_MATRIX.md](docs/TEMPLATE_SCOPE_MATRIX.md) | Defines what belongs in baseline template vs optional vs custom-only scope | Maintainers, contributors |
-| [docs/CUSTOM_REPO_WORKFLOW.md](docs/CUSTOM_REPO_WORKFLOW.md) | Explains template/upstream and custom/origin workflow | Maintainers, platform teams |
+| [docs/REPO_CONTENT_GUIDELINES.md](docs/REPO_CONTENT_GUIDELINES.md) | Defines what belongs in the core platform, operations layer, and challenge layer | Maintainers, contributors |
+| [docs/CUSTOM_REPO_WORKFLOW.md](docs/CUSTOM_REPO_WORKFLOW.md) | Standard Git workflow for this single custom repository | Maintainers, platform teams |
 | [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md) | Challenge authoring and deployment workflow, template structure, validation rules | CTF authors, challenge creators |
 | [docs/PLAYER_INSTANCE_ORCHESTRATOR.md](docs/PLAYER_INSTANCE_ORCHESTRATOR.md) | Orchestrator API reference, endpoints, HMAC request signing, team quotas, audit logs | Developers, DevOps, API consumers |
 
 ### Optional Guides
 
-These are useful, but they are not required to understand or use the baseline template:
+These are useful, but they are not required for day-1 deployment:
 
 - [docs/WORKFLOW_PRIORITIES.md](docs/WORKFLOW_PRIORITIES.md)
 - [docs/SECURITY_BASELINE.md](docs/SECURITY_BASELINE.md)
 - [docs/VAULT_SETUP.md](docs/VAULT_SETUP.md)
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- [docs/TROUBLESHOOTING.md#operations-command-cookbook](docs/TROUBLESHOOTING.md#operations-command-cookbook)
 - [docs/MONITORING.md](docs/MONITORING.md)
 - [docs/CTFD_ORCHESTRATOR_INTEGRATION.md](docs/CTFD_ORCHESTRATOR_INTEGRATION.md)
 - [docs/CTFD_CHALLENGE_SYNC.md](docs/CTFD_CHALLENGE_SYNC.md)
 - [docs/KUBERNETES_EXTENSION.md](docs/KUBERNETES_EXTENSION.md)
 
-## Template and Custom Strategy
+## Repository Strategy
 
-Use a two-repository model:
+This project now follows a single-repository model:
 
-1. `ctfd-platform-template`: baseline, reusable, conservative updates.
-2. `ctfd-platform-custom`: team product repository with custom UX/ops behavior.
-
-Practical rule:
-
-- If a change helps most teams, push it to the template.
-- If a change is team-specific or high-risk customization, keep it in the custom repository.
+1. `main` is the production-ready reference branch.
+2. Feature branches are merged by PR into `main`.
+3. No upstream template synchronization is required.
 
 ### Key Feature Documentation
 

@@ -41,6 +41,44 @@
         orchestrator_ctfd_webhook_token_effective: "{{ vault_overrides.orchestrator_ctfd_webhook_token | default(orchestrator_ctfd_webhook_token) }}"
       no_log: true
 
+    - name: Resolve orchestrator quota profile
+      vars:
+        quota_profiles:
+          small:
+            team_max_active: 6
+            team_challenge_max_active: 1
+            team_rate_limit_per_min: 20
+          medium:
+            team_max_active: 10
+            team_challenge_max_active: 2
+            team_rate_limit_per_min: 30
+          large:
+            team_max_active: 20
+            team_challenge_max_active: 3
+            team_rate_limit_per_min: 60
+      set_fact:
+        orchestrator_team_max_active: "{{ quota_profiles[orchestrator_quota_profile].team_max_active }}"
+        orchestrator_team_challenge_max_active: "{{ quota_profiles[orchestrator_quota_profile].team_challenge_max_active }}"
+        orchestrator_team_rate_limit_per_min: "{{ quota_profiles[orchestrator_quota_profile].team_rate_limit_per_min }}"
+      when:
+        - orchestrator_quota_profile is defined
+        - orchestrator_quota_profile in quota_profiles
+
+    - name: Validate quota profile input
+      fail:
+        msg: "Invalid orchestrator_quota_profile='{{ orchestrator_quota_profile }}'. Allowed values: small, medium, large."
+      when:
+        - orchestrator_quota_profile is defined
+        - orchestrator_quota_profile not in ['small', 'medium', 'large']
+
+    - name: Print quota profile summary
+      debug:
+        msg: >-
+          Quota profile={{ orchestrator_quota_profile | default('custom') }};
+          team_max_active={{ orchestrator_team_max_active }};
+          team_challenge_max_active={{ orchestrator_team_challenge_max_active }};
+          team_rate_limit_per_min={{ orchestrator_team_rate_limit_per_min }}
+
     - name: Create orchestrator directory
       file:
         path: /opt/ctf/orchestrator
