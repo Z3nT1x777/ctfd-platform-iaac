@@ -391,6 +391,9 @@ python -m flake8 app.py  # Optional: linting
 
 ## Validation Layers
 
+`Step 3: Validate Challenge Structure` is the single-challenge local gate.
+This section explains the full validation model (local gate + CI gate).
+
 ### Local Validation
 
 Run before commit:
