@@ -56,21 +56,21 @@ Use family templates from [challenges/_templates](challenges/_templates).
 Windows example:
 
 ```powershell
-./scripts/new-challenge.ps1 -Name <challenge-slug> -Family <family>
-./scripts/validate-challenge.ps1 -Path challenges/<family>/<challenge-slug>
-vagrant ssh -c "cd /vagrant/challenges/<family>/<challenge-slug> && docker compose up -d --build"
+./scripts/new-challenge.ps1 -Name [web-01-test] -Family [web]
+./scripts/validate-challenge.ps1 -Path challenges/[web]/[web-01-test]
+vagrant ssh -c "cd /vagrant/challenges/[web]/[web-01-test] && docker compose up -d --build"
 ```
 
 Editable values in the first command:
-- `<challenge-slug>` = challenge slug/name (example: `web-01-test`)
-- `<family>` = challenge family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
+- `[web-01-test]` = challenge slug/name
+- `[web]` = challenge family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
 
 Linux/macOS example:
 
 ```bash
-bash ./scripts/new-challenge.sh <challenge-slug> --family <family>
-bash ./scripts/validate-challenge.sh challenges/<family>/<challenge-slug>
-vagrant ssh -c "cd /vagrant/challenges/<family>/<challenge-slug> && docker compose up -d --build"
+bash ./scripts/new-challenge.sh [web-01-test] --family [web]
+bash ./scripts/validate-challenge.sh challenges/[web]/[web-01-test]
+vagrant ssh -c "cd /vagrant/challenges/[web]/[web-01-test] && docker compose up -d --build"
 ```
 
 Detailed guide: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)

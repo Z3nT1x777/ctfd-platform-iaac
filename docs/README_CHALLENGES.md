@@ -115,19 +115,19 @@ instance:
 
 **Windows PowerShell:**
 ```powershell
-./scripts/new-challenge.ps1 -Name <challenge-slug> -Family <family>
+./scripts/new-challenge.ps1 -Name [my-web-challenge] -Family [web]
 ```
 
 Values to edit in the command:
-- `<challenge-slug>` = your challenge slug/name (example: `my-web-challenge`)
-- `<family>` = challenge family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
+- `[my-web-challenge]` = your challenge slug/name
+- `[web]` = challenge family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
 
 **Linux / macOS:**
 ```bash
-bash ./scripts/new-challenge.sh <challenge-slug> --family <family>
+bash ./scripts/new-challenge.sh [my-web-challenge] --family [web]
 ```
 
-This generates a new directory at `challenges/<family>/<challenge-slug>/` with template files.
+This generates a new directory at `challenges/[web]/[my-web-challenge]/` with template files.
 
 ### Step 2: Customize Challenge
 
@@ -442,27 +442,27 @@ Use this compact sequence for the standard flow:
 
 ```bash
 # 1) create skeleton
-bash ./scripts/new-challenge.sh <challenge-slug> --family <family>
+bash ./scripts/new-challenge.sh [my-web-challenge] --family [web]
 
 # 2) local structure validation
-bash ./scripts/validate-challenge.sh challenges/<family>/<challenge-slug>
+bash ./scripts/validate-challenge.sh challenges/[web]/[my-web-challenge]
 
 # 3) optional local compose smoke test
-vagrant ssh -c "cd /vagrant/challenges/<family>/<challenge-slug> && docker compose up -d --build && docker compose down"
+vagrant ssh -c "cd /vagrant/challenges/[web]/[my-web-challenge] && docker compose up -d --build && docker compose down"
 
 # 4) commit + push branch
-git checkout -b feat/<challenge-slug>
-git add challenges/<family>/<challenge-slug>
-git commit -m "feat(challenges): add <challenge-slug>"
-git push -u origin feat/<challenge-slug>
+git checkout -b feat/[my-web-challenge]
+git add challenges/[web]/[my-web-challenge]
+git commit -m "feat(challenges): add [my-web-challenge]"
+git push -u origin feat/[my-web-challenge]
 
 # 5) publish to CTFd (recommended path)
 python scripts/sync_challenges_ctfd.py --ctfd-url http://192.168.56.10 --api-token <ADMIN_TOKEN> --state visible --instance-base-url http://192.168.56.10
 ```
 
 Editable values in step 1:
-- `<challenge-slug>`
-- `<family>`
+- `[my-web-challenge]`
+- `[web]`
 
 ---
 
