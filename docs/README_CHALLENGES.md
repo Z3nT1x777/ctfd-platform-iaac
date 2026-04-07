@@ -118,6 +118,10 @@ instance:
 ./scripts/new-challenge.ps1 -Name my-web-challenge -Family web
 ```
 
+Values to edit in the command:
+- <span style="color:#ff6b6b"><code>my-web-challenge</code></span> = your challenge slug/name
+- <span style="color:#4dabf7"><code>web</code></span> = challenge family (`web`, `osint`, `sandbox`, `reverse`, `pwn`)
+
 **Linux / macOS:**
 ```bash
 bash ./scripts/new-challenge.sh my-web-challenge --family web
@@ -455,6 +459,10 @@ git push -u origin feat/my-web-challenge
 # 5) publish to CTFd (recommended path)
 python scripts/sync_challenges_ctfd.py --ctfd-url http://192.168.56.10 --api-token <ADMIN_TOKEN> --state visible --instance-base-url http://192.168.56.10
 ```
+
+Editable values in step 1:
+- <span style="color:#ff6b6b"><code>my-web-challenge</code></span>
+- <span style="color:#4dabf7"><code>web</code></span>
 
 ---
 

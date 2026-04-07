@@ -61,6 +61,10 @@ Windows example:
 vagrant ssh -c "cd /vagrant/challenges/web-01-test && docker compose up -d --build"
 ```
 
+Editable values in the first command:
+- <span style="color:#ff6b6b"><code>web-01-test</code></span> = challenge slug/name
+- <span style="color:#4dabf7"><code>web</code></span> = challenge family
+
 Linux/macOS example:
 
 ```bash

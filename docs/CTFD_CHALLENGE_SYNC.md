@@ -102,7 +102,9 @@ python scripts/sync_challenges_ctfd.py \
   --instance-base-url http://192.168.56.10
 ```
 
-## Recommended publication pipeline
+## Deployment Modes
+
+### A) Automatic Deployment (Recommended)
 
 For this repository, the default challenge publication flow is:
 1. Create/update challenge files in Git.
@@ -110,7 +112,10 @@ For this repository, the default challenge publication flow is:
 3. Open PR and let CI validate structure/tests.
 4. Run sync script to publish/update in CTFd.
 
-Manual challenge creation in CTFd admin UI should be treated as fallback only.
+### B) Manual Deployment (Fallback Only)
+
+Manual challenge creation in the CTFd admin UI is kept for debug/demo/one-off actions only.
+Use it as an exception, not as the standard publication path.
 
 ## Environment variables (optional)
 
