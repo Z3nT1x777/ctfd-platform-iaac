@@ -1,14 +1,12 @@
 # CTFd + Orchestrator Integration Guide
 
-**Status:** ✅ Integrated in deployment templates with live UI + real-time leaderboard
-
 ---
 
 ## What This Feature Does
 
 Instead of admins manually launching challenge instances via the `/ui` dashboard, players can now:
 
-1. **Click "Start Challenge"** in CTFd UI (http://192.168.56.10:8000)
+1. **Click "Start Challenge"** in CTFd UI (http://192.168.56.10:8000/challenges)
 2. **Instance launches automatically** (handled by plugin)
 3. **Player sees instance URL** with remaining TTL countdown
 4. **Multiple players** can launch instances of same challenge simultaneously
@@ -21,6 +19,34 @@ Important role split:
 ---
 
 ## Architecture Overview
+
+### Recommended Instance Launch Pipeline
+
+```mermaid
+graph TD
+    A["Step 1: Player Logs In"] -->|ctfd.io| B["Step 2: View Challenges"]
+    B -->|Click Start| C["Step 3: Plugin Intercepts"]
+    C -->|HMAC-Signed POST| D["Step 4a: Validate & Spawn"]
+    D -->|Docker create| E["Step 4b: Assign Port"]
+    E -->|Track TTL| F["Step 5: Return URL"]
+    F -->|Instance ready| G["Player Accesses Instance"]
+    G -->|After TTL expires| H["Auto-Cleanup"]
+    
+    style A fill:#e1f5e1
+    style B fill:#e1f5e1
+    style C fill:#fff3e0
+    style D fill:#fff3e0
+    style E fill:#fff3e0
+    style F fill:#fff3e0
+    style G fill:#e3f2fd
+    style H fill:#f3e5f5
+```
+
+This is the canonical player instance workflow:
+
+### Detailed Architecture
+
+The original ASCII diagram shows layered interactions:
 
 ```
 Player Workflow:
@@ -79,14 +105,14 @@ Player Workflow:
 
 ## Current State
 
-| Component | Status | Where |
+| Component | Status | Notes |
 |-----------|--------|-------|
-| **Orchestrator API** | ✅ Complete | `/scripts/player-instance-api.py` |
-| **Webhook Endpoint** | ✅ Complete | `/ctfd/event` endpoint |
-| **CTFd Plugin** | ✅ Implemented | `scripts/ctfd-orchestrator-plugin/` |
-| **Plugin Tests** | ⚠️ Manual | Instructions: see README.md |
-| **CTFd UI Integration** | ✅ Live UI | `/plugins/orchestrator/ui` + quick link asset |
-| **Live Leaderboard** | ✅ Real-time | `/plugins/orchestrator/leaderboard/live` |
+| **Orchestrator API** | ✅ Complete | HMAC-SHA256 signing, rate limiting, team quotas. Handles instance lifecycle via `/start`, `/stop`, `/list` endpoints. |
+| **CTFd Plugin** | ✅ Implemented | Player-facing launch button; integrated via docker-compose mount. Auto-launched when CTFd starts. |
+| **Plugin Tests** | ⚠️ Manual | No automated tests in CI/CD. Must be tested manually against CTFd UI (see "Verify Plugin Loaded" section). |
+| **Player Launch UI** | ✅ Live | One-click button on challenge cards. Handles web + SSH challenges with access-aware instructions. |
+| **Admin/Dev Ops Dashboard** | ✅ Live | `/plugins/orchestrator/ui` for ops team. Real-time instance tracking, manual launch, quota visibility. |
+| **Real-time Leaderboard** | ✅ Live | `/plugins/orchestrator/leaderboard/live` displays active instances and team quotas in real-time. |
 
 ---
 
@@ -106,16 +132,23 @@ The compose template now mounts the plugin directly:
 
 ### Step 2: Configure Credentials
 
-Edit `docker-compose-ctfd.yml.j2` to pass environment variables:
+Edit `docker-compose-ctfd.yml.j2` to pass environment variables. The Ansible playbook handles secret injection:
 
 ```yaml
 environment:
   - ORCHESTRATOR_API_URL=http://127.0.0.1:8181
-  - ORCHESTRATOR_API_TOKEN=${ORCHESTRATOR_TOKEN}
-  - ORCHESTRATOR_SIGNING_SECRET=${ORCHESTRATOR_SIGNING_SECRET}
-  - ORCHESTRATOR_WEBHOOK_TOKEN=${ORCHESTRATOR_WEBHOOK_TOKEN}
-  - ORCHESTRATOR_TEAM_MAX_ACTIVE=3
+  - ORCHESTRATOR_API_TOKEN={{ orchestrator_api_token }}
+  - ORCHESTRATOR_SIGNING_SECRET={{ orchestrator_signing_secret }}
+  - ORCHESTRATOR_WEBHOOK_TOKEN={{ orchestrator_webhook_token }}
+  - ORCHESTRATOR_TEAM_MAX_ACTIVE={{ orchestrator_team_max_active | default(3) }}
 ```
+
+**Secrets Management:**
+- **Development:** Use `ansible/vars/main.yml` with plaintext values
+- **Production:** Use `ansible/vault.yml` (encrypted) OR GitHub Secrets → `~/.env` on host
+  - Vault example: `ansible-playbook playbooks/main.yml --ask-vault-pass`
+  - GitHub Secrets: Set `ORCHESTRATOR_API_TOKEN`, `ORCHESTRATOR_SIGNING_SECRET` in repo secrets → `vagrant` command reads from env
+- **Best Practice:** Never commit tokens in plaintext. Use vault encryption or external secrets.
 
 ### Step 3: Restart CTFd
 
@@ -139,6 +172,8 @@ Orchestrator UI is protected by token by default.
 Use:
 
 `http://192.168.56.10:8181/ui?token=<ORCHESTRATOR_API_TOKEN>`
+
+**Note:** Internally, the orchestrator API runs on `127.0.0.1:8181`. To access from host/player machines, use the VM's static IP `192.168.56.10`.
 
 ### Test in CTFd UI
 
@@ -274,24 +309,29 @@ Action: Player must stop one instance to start another
 
 ---
 
-## Future Enhancements (P4 Roadmap)
+## Feature Status (Roadmap)
 
-### UI Improvements
-- [ ] Add "Stop Challenge" button to challenge modal
-- [ ] Real-time TTL countdown (JavaScript auto-refresh)
-- [ ] Instance list in player dashboard
-- [ ] Visual quota indicator ("2/3 instances used")
+### ✅ Deployed Features
+- [x] One-click "Start Challenge" button (player launch)
+- [x] Real-time leaderboard with active instances
+- [x] Team quota enforcement (max instances per team)
+- [x] Manual stop/list endpoints for ops dashboard
+- [x] TTL auto-cleanup (60 min default)
 
-### Advanced Features
+### 🚧 In Development / Planned
+- [ ] "Stop Challenge" button on player launch page (currently only in admin /ui)
+- [ ] Real-time TTL countdown (JavaScript auto-refresh on player page)
+- [ ] Instance list in player dashboard (currently only in admin/ops /ui)
+- [ ] Visual quota indicator ("2/3 instances used") on challenge card
+
+### 📋 Future Enhancements (P4+)
 - [ ] Flag capture from instance logs
-- [ ] Challenge completion notifications when flag is submitted
+- [ ] Challenge completion auto-notifications
 - [ ] Instance console access (SSH/VNC)
-- [ ] Instance metrics dashboard (CPU, memory usage)
-
-### Infrastructure
+- [ ] Instance metrics dashboard (CPU, memory, network)
 - [ ] Kubernetes backend (instead of Docker Compose)
 - [ ] Geographic instance distribution
-- [ ] Instance snapshots/templates
+- [ ] Instance snapshots for faster spawn
 
 ---
 
@@ -322,14 +362,33 @@ curl -X POST http://127.0.0.1:8181/start \
 
 ---
 
-## Next Steps
+## Deployment Validation Checklist
 
-1. ✅ Enable plugin (follow 6-step guide above)
-2. ⚠️ Test in CTFd UI with sample team
-3. ⚠️ Enhance UI for player experience (real-time TTL, stop button)
-4. ⚠️ Deploy monitoring (see MONITORING.md)
-5. ⚠️ Run security preflight checks before production
-6. ✅ Ready for tournament!
+#### ✅ Infrastructure & Secrets
+- [x] Orchestrator API running (systemd service)
+- [x] CTFd plugin mounted in docker-compose template
+- [x] Credentials passed via Ansible vars or vault
+- [x] Plugin logs show "CTFd Orchestrator Plugin initialized"
+
+#### 🚧 Functional Testing
+- [x] Player can log into CTFd UI (http://192.168.56.10:8000)
+- [x] "Start Challenge" button appears on challenge cards
+- [x] Clicking button launches instance (check orchestrator logs)
+- [x] Player receives URL + TTL remaining
+- [ ] Real-time TTL countdown updates without page refresh (planned)
+- [ ] "Stop Challenge" button works on player page (planned)
+
+#### ✅ Operations
+- [x] Admin can access ops dashboard (http://192.168.56.10:8181/ui?token=...)
+- [x] Admin can view active instances and team quotas
+- [x] Admin can manually start/stop instances
+- [x] Instances auto-cleanup after TTL expires
+
+#### 🔒 Pre-Production
+- [x] Security preflight checks pass (see SECURITY_BASELINE.md)
+- [ ] Monitoring deployed (Prometheus/Grafana) - see MONITORING.md
+- [ ] Credentials rotated and vault-encrypted
+- [x] Ready for tournament! 🎯
 
 ---
 
