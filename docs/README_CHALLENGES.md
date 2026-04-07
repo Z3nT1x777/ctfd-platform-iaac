@@ -496,7 +496,7 @@ Use this only for debug/demo/one-off actions.
 
 After deployment, challenges can be registered in CTFd:
 
-1. Access CTFd: `http://192.168.56.10:8000`
+1. Access CTFd: `http://192.168.56.10`
 2. Admin panel → Challenges → New Challenge
 3. Fill in from `challenge.yml`:
    - Name → `challenge.yml.name`
