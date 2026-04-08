@@ -21,7 +21,7 @@ vagrant status  # Should show "running"
 
 # Check services
 vagrant ssh -c "docker ps"
-vagrant ssh -c "curl -I http://localhost:8000"
+vagrant ssh -c "curl -I http://localhost:80"
 vagrant ssh -c "sudo systemctl status ctf-orchestrator-api.service"
 ```
 

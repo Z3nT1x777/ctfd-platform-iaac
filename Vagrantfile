@@ -6,13 +6,13 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/jammy64"
   config.vm.hostname = "ctf-platform"
 
-  # Network: static IP for access from Windows host
+  # Static host-only IP: stable endpoint from host -> VM (preferred)
   config.vm.network "private_network", ip: "192.168.56.10"
-  # Port forwarding (backup if private_network fails)
-  config.vm.network "forwarded_port", guest: 80, host: 8000   # CTFd
-  config.vm.network "forwarded_port", guest: 8080, host: 8080 # GitLab
-  config.vm.network "forwarded_port", guest: 9090, host: 9090 # Prometheus
-  config.vm.network "forwarded_port", guest: 3000, host: 3000 # Grafana
+  # Localhost forwarding via NAT: convenience endpoint, host ports can auto-shift
+  config.vm.network "forwarded_port", guest: 80, host: 8000, auto_correct: true   # CTFd
+  config.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true # GitLab
+  config.vm.network "forwarded_port", guest: 9090, host: 9090, auto_correct: true # Prometheus
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, auto_correct: true # Grafana
 
   # VM Resources
   config.vm.provider "virtualbox" do |vb|

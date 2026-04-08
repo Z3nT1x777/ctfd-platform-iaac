@@ -45,9 +45,16 @@ vagrant up --provision
 
 Access points after provisioning:
 
-- CTFd: http://192.168.56.10
-- CTFd (forwarded): http://localhost:8000
+- CTFd (static VM IP, stable): http://192.168.56.10
+- CTFd (localhost forwarded port, may auto-correct): http://localhost:8000
 - Orchestrator UI (admin/dev): http://192.168.56.10:8181/ui
+
+If the forwarded port is already occupied on your machine, run `vagrant port` to see the actual host port Vagrant selected.
+
+Networking model:
+
+- Static VM IP (`192.168.56.10`) uses the host-only adapter and should remain stable across machines.
+- Localhost access (`localhost:<port>`) uses NAT forwarding and may change when a host port is already in use.
 
 ## Challenge Authoring Workflow
 
@@ -149,7 +156,7 @@ After `vagrant up --provision`:
 
 | Service | URL | Port | Purpose |
 |---------|-----|------|---------|
-| **CTFd** | http://192.168.56.10 | 80 (HTTP) | Main CTF platform |
-| **CTFd (Local)** | http://localhost:8000 | 8000 (Vagrant fwd) | CTFd via localhost |
+| **CTFd (Static VM IP)** | http://192.168.56.10 | 80 (HTTP) | Stable endpoint via host-only network |
+| **CTFd (Localhost Forwarded)** | http://localhost:8000 | 8000+ (Vagrant auto-correct) | NAT forwarding, host port may change |
 | **Orchestrator API** | http://192.168.56.10:8181 | 8181 (proxied) | Challenge instance control |
 | **Orchestrator UI** | http://192.168.56.10:8181/ui | 8181 | Web dashboard |
