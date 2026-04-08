@@ -72,8 +72,10 @@ python scripts/sync_challenges_ctfd.py --ctfd-url http://192.168.56.10 --api-tok
 
 ## Quick start
 
+
 ### 1. Dry run
 
+#### Bash
 ```bash
 python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
@@ -81,8 +83,18 @@ python scripts/sync_challenges_ctfd.py \
   --dry-run
 ```
 
+#### PowerShell
+```powershell
+python scripts/sync_challenges_ctfd.py `
+  --ctfd-url http://192.168.56.10 `
+  --api-token <YOUR_ADMIN_TOKEN> `
+  --dry-run
+```
+
+
 ### 2. Real sync (visible)
 
+#### Bash
 ```bash
 python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
@@ -91,8 +103,19 @@ python scripts/sync_challenges_ctfd.py \
   --instance-base-url http://192.168.56.10
 ```
 
+#### PowerShell
+```powershell
+python scripts/sync_challenges_ctfd.py `
+  --ctfd-url http://192.168.56.10 `
+  --api-token <YOUR_ADMIN_TOKEN> `
+  --state visible `
+  --instance-base-url http://192.168.56.10
+```
+
+
 ### 3. Keep hidden for review
 
+#### Bash
 ```bash
 python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
@@ -100,8 +123,18 @@ python scripts/sync_challenges_ctfd.py \
   --state hidden
 ```
 
+#### PowerShell
+```powershell
+python scripts/sync_challenges_ctfd.py `
+  --ctfd-url http://192.168.56.10 `
+  --api-token <YOUR_ADMIN_TOKEN> `
+  --state hidden
+```
+
+
 ### 4. Optional: admin UI links instead of one-click launch
 
+#### Bash
 ```bash
 python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
@@ -111,16 +144,38 @@ python scripts/sync_challenges_ctfd.py \
   --orchestrator-ui-url http://192.168.56.10/plugins/orchestrator/ui
 ```
 
+#### PowerShell
+```powershell
+python scripts/sync_challenges_ctfd.py `
+  --ctfd-url http://192.168.56.10 `
+  --api-token <YOUR_ADMIN_TOKEN> `
+  --state visible `
+  --connection-mode orchestrator-ui `
+  --orchestrator-ui-url http://192.168.56.10/plugins/orchestrator/ui
+```
+
+
 ### 5. Optional: static direct links (`ip:port`)
 
 Use this only if your challenge containers are permanently up on fixed ports.
 
+#### Bash
 ```bash
 python scripts/sync_challenges_ctfd.py \
   --ctfd-url http://192.168.56.10 \
   --api-token <YOUR_ADMIN_TOKEN> \
   --state visible \
   --connection-mode static-port \
+  --instance-base-url http://192.168.56.10
+```
+
+#### PowerShell
+```powershell
+python scripts/sync_challenges_ctfd.py `
+  --ctfd-url http://192.168.56.10 `
+  --api-token <YOUR_ADMIN_TOKEN> `
+  --state visible `
+  --connection-mode static-port `
   --instance-base-url http://192.168.56.10
 ```
 
