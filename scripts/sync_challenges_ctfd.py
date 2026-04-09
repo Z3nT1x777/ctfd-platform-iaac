@@ -131,6 +131,15 @@ def build_spec(challenge_dir: Path) -> ChallengeSpec:
     value = int(value_raw or "100")
     challenge_type = str(raw.get("type", "docker")).strip() or "docker"
     description = str(raw.get("description", "")).strip()
+    # Correction automatique du lien dans la description pour OSINT statique
+    if category == "osint" and challenge_type == "static":
+        import re
+        # Remplace tout lien http://...:PORT par l'URL statique
+        description = re.sub(
+            r"http://[\w\.-]+:\d+",
+            f"http://192.168.56.10/osint/{challenge_dir.name}/resources/",
+            description,
+        )
     flag = str(raw.get("flag", "")).strip()
 
     if not flag:
@@ -254,26 +263,27 @@ def sync_challenge(
     else:
         challenge_id = -1  # Will be filled after creation
     
-    # Now generate connection_info with the challenge_id if we have it
+    # Ne pas générer de lien orchestrateur pour les challenges statiques
     connection_info = ""
-    if connection_mode == "static-port" and spec.port is not None and instance_base_url:
-        connection_info = f"{instance_base_url.rstrip('/')}:{spec.port}"
-    elif connection_mode == "orchestrator-ui" and orchestrator_ui_url:
-        connection_info = (
-            f"Launch your team instance from: {orchestrator_ui_url.rstrip('/')} "
-            f"(challenge: {spec.name})"
-        )
-    elif connection_mode == "launch-link" and instance_base_url:
-        # For new challenges, we'll update connection_info after creation
-        # For existing challenges, we can use the known challenge_id
-        if challenge_id > 0:
-            # Known challenge ID - use direct launch link.
+    if spec.challenge_type in ["docker", "dynamic"]:
+        if connection_mode == "static-port" and spec.port is not None and instance_base_url:
+            connection_info = f"{instance_base_url.rstrip('/')}:{{spec.port}}"
+        elif connection_mode == "orchestrator-ui" and orchestrator_ui_url:
             connection_info = (
-                f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge_id={challenge_id}"
+                f"Launch your team instance from: {orchestrator_ui_url.rstrip('/')} "
+                f"(challenge: {spec.name})"
             )
-        else:
-            # New challenge - will be updated after creation
-            connection_info = "[updating after creation]"
+        elif connection_mode == "launch-link" and instance_base_url:
+            # For new challenges, we'll update connection_info after creation
+            # For existing challenges, we can use the known challenge_id
+            if challenge_id > 0:
+                # Known challenge ID - use direct launch link.
+                connection_info = (
+                    f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge_id={challenge_id}"
+                )
+            else:
+                # New challenge - will be updated after creation
+                connection_info = "[updating after creation]"
 
     challenge_payload: dict[str, Any] = {
         "name": spec.name,
@@ -429,9 +439,11 @@ def main() -> int:
             )
             if action == "create":
                 created += 1
+                action_str = f"\033[32m{action}\033[0m"  # vert
             else:
                 updated += 1
-            print(f"OK: {action} -> {spec.name}")
+                action_str = f"\033[33m{action}\033[0m"  # jaune foncé
+            print(f"OK: {action_str} -> {spec.name}")
         except Exception as exc:
             print(f"ERROR syncing {spec.name}: {exc}")
             return 1

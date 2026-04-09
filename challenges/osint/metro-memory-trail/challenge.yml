@@ -1,12 +1,18 @@
 name: metro-memory-trail
 category: osint
 value: 150
-type: docker
-connection_mode: web
-container_port: 5000
+type: static
 description: |
   Static OSINT challenge with a visual clue trail.
-  Analyze the page assets and combine clues to recover the target location flag.
+  
+  <b>Instructions :</b>
+  
+    1. Accède à la page du challenge :
+      http://192.168.56.10/osint/metro-memory-trail/resources/
+  2. Analyse les images et leurs métadonnées dans la section "Clues".
+  3. Combine les indices pour retrouver la station et l'année.
+  4. Format du flag : <code>CTF{city_station_YYYY}</code>
+
+connection_info: http://192.168.56.10/osint/metro-memory-trail/resources/
 
 flag: CTF{paris_bastille_1989}
-port: 5012

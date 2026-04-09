@@ -23,6 +23,7 @@ Included capabilities:
 - **Reverse Proxy:** nginx ingress for controlled API exposure with X-Forwarded-For client tracking
 - **Validation:** Security preflight checks in CI and git hooks
 - **Player Launch UX:** One-click launch pages in CTFd with access-aware rendering (web, SSH commands, instructions)
+- **OSINT Static Sync:** Automatic deployment of static OSINT challenge assets (`resources/`) to nginx at `http://192.168.56.10/osint/<challenge>/resources/`
 
 ## Technology Stack
 
@@ -48,6 +49,7 @@ Access points after provisioning:
 - CTFd (static VM IP, stable): http://192.168.56.10
 - CTFd (localhost forwarded port, may auto-correct): http://localhost:8000
 - Orchestrator UI (admin/dev): http://192.168.56.10:8181/ui
+- OSINT static challenges: http://192.168.56.10/osint/\<challenge\>/resources/
 
 If the forwarded port is already occupied on your machine, run `vagrant port` to see the actual host port Vagrant selected.
 
@@ -55,6 +57,7 @@ Networking model:
 
 - Static VM IP (`192.168.56.10`) uses the host-only adapter and should remain stable across machines.
 - Localhost access (`localhost:<port>`) uses NAT forwarding and may change when a host port is already in use.
+- Port 80 is handled by nginx (front-proxy): routes `/osint/` to `/var/www/osint/`, all other traffic proxied to CTFd.
 
 ## Challenge Authoring Workflow
 
@@ -81,6 +84,16 @@ vagrant ssh -c "cd /vagrant/challenges/[web]/[web-01-test] && docker compose up 
 ```
 
 Detailed guide: [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md)
+
+### OSINT Static Challenges
+
+OSINT challenges use a `resources/` folder instead of Docker. On provisioning, these files are automatically synced to `/var/www/osint/<challenge>/resources/` by the Ansible playbook.
+
+- Place static files under `challenges/osint/<challenge>/resources/`
+- Set `connection_info: http://192.168.56.10/osint/<challenge>/resources/` in `challenge.yml`
+- To force a re-sync: `vagrant ssh -c "python3 /vagrant/scripts/sync_osint_static.py --target /var/www/osint/"`
+
+See [docs/README_CHALLENGES.md](docs/README_CHALLENGES.md) for authoring details.
 
 ## Security Notes
 
@@ -156,7 +169,8 @@ After `vagrant up --provision`:
 
 | Service | URL | Port | Purpose |
 |---------|-----|------|---------|
-| **CTFd (Static VM IP)** | http://192.168.56.10 | 80 (HTTP) | Stable endpoint via host-only network |
+| **CTFd (Static VM IP)** | http://192.168.56.10 | 80 (nginx → CTFd) | Stable endpoint via host-only network |
 | **CTFd (Localhost Forwarded)** | http://localhost:8000 | 8000+ (Vagrant auto-correct) | NAT forwarding, host port may change |
+| **OSINT Static Files** | http://192.168.56.10/osint/ | 80 (nginx, same proxy) | Served from `/var/www/osint/` |
 | **Orchestrator API** | http://192.168.56.10:8181 | 8181 (proxied) | Challenge instance control |
 | **Orchestrator UI** | http://192.168.56.10:8181/ui | 8181 | Web dashboard |

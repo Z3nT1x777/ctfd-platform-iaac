@@ -2,9 +2,17 @@ name: Challenge Name
 category: osint
 value: 100
 type: static
-connection_mode: instruction
-access_instructions: |
-  Investigate public artifacts and submit the flag.
+
+# --- Mode d'accès ---
+# Option A : challenge avec fichiers statiques servis via nginx (resources/ présent)
+connection_mode: web
+connection_info: http://192.168.56.10/osint/<challenge-slug>/resources/
+
+# Option B : challenge instruction uniquement (sans fichiers à servir)
+# connection_mode: instruction
+# access_instructions: |
+#   Investigate public artifacts and submit the flag.
+
 description: |
   Investigate public artifacts and submit the flag.
 

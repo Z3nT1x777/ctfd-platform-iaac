@@ -144,6 +144,43 @@
         dest: /etc/systemd/system/player-instance-cleanup.timer
         mode: '0644'
 
+    - name: Remove legacy osint-static.conf from conf.d (old Copilot approach)
+      file:
+        path: /etc/nginx/conf.d/osint-static.conf
+        state: absent
+
+    - name: Stop any container occupying port 80 before nginx reconfiguration
+      shell: |
+        cids=$(docker ps --filter "publish=80" -q 2>/dev/null)
+        if [ -n "$cids" ]; then
+          echo "Stopping containers on port 80: $cids"
+          docker stop $cids
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Create OSINT static web root
+      file:
+        path: "{{ osint_static_web_root }}"
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0755'
+
+    - name: Install CTFd frontend nginx config (port 80 + /osint/ static)
+      template:
+        src: ../templates/ctfd-nginx.conf.j2
+        dest: /etc/nginx/sites-available/ctfd.conf
+        mode: '0644'
+
+    - name: Enable CTFd nginx site
+      file:
+        src: /etc/nginx/sites-available/ctfd.conf
+        dest: /etc/nginx/sites-enabled/ctfd.conf
+        state: link
+
     - name: Install orchestrator nginx reverse proxy
       template:
         src: ../templates/orchestrator-api.nginx.conf.j2
@@ -234,6 +271,19 @@
       delay: 10
 
 
+    - name: Sync OSINT static challenge assets to web root
+      command: >
+        python3 /vagrant/scripts/sync_osint_static.py
+        --target {{ osint_static_web_root }}
+        --challenges-root /vagrant/challenges
+      register: osint_sync_result
+      changed_when: "'Synchronisé' in osint_sync_result.stdout or 'copied' in osint_sync_result.stdout"
+      failed_when: false
+
     - name: Success message
       debug:
-        msg: "✅ CTF Platform déployée avec succès sur http://{{ ansible_default_ipv4.address }}"
+        msg: >-
+          ✅ CTF Platform déployée —
+          CTFd: http://{{ ctf_vm_ip }} |
+          Orchestrator: http://{{ ctf_vm_ip }}:{{ orchestrator_proxy_listen_port }}/ui |
+          OSINT: http://{{ ctf_vm_ip }}/osint/

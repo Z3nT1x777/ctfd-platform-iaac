@@ -1,21 +1,23 @@
-# OSINT Template Example
+# OSINT Template Example (statique)
 
-## Overview
+Ce template montre comment structurer un challenge OSINT statique servi par nginx.
 
-Static OSINT-style template challenge.
-It demonstrates an instruction-only access mode.
+- Accès : `/osint/template-example/` sur le serveur web
+- Page principale : `index.html`
+- Assets : `assets/clue.png`, `assets/final.jpg`
 
-## Player Goal
+## Déploiement
 
-Replace this section with your real objective and clue progression.
-Use a PDF, image, or other document asset as the clue source when you adapt the challenge.
+1. Copier le dossier `osint-static/template-example/` sur le serveur dans `/var/www/osint/template-example/`
+2. Vérifier que le lien dans `challenge.yml` pointe vers :
+   `connection_info: http://<domaine>/osint/template-example/`
 
-## Access Mode
+## Pour créer un nouveau challenge à partir du template
 
-This challenge should render as instructions only:
+- Duplique le dossier `template-example/`
+- Modifie `index.html` et les fichiers dans `assets/`
+- Mets à jour le `challenge.yml` correspondant
 
-```yaml
-connection_mode: instruction
-```
+---
 
-The launch card should not display a web URL.
+Voir le README général dans `osint-static/` pour la procédure complète.

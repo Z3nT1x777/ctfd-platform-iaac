@@ -7,7 +7,7 @@ services:
     container_name: ctfd
     restart: unless-stopped
     ports:
-      - "{{ ctfd_port }}:8000"
+      - "127.0.0.1:{{ ctfd_internal_port }}:8000"
     environment:
       - DATABASE_URL=mysql+pymysql://{{ DB_USER }}:{{ db_password_effective }}@db/{{ DB_NAME }}
       - REDIS_URL=redis://cache:6379

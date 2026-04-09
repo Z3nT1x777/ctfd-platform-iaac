@@ -4,15 +4,19 @@
 
 ```
 Client (outside VM)
-    ↓
-nginx (0.0.0.0:8181)  [Reverse proxy, X-Forwarded-For headers]
-    ↓
-orchestrator API (127.0.0.1:18181) [Internal, localhost only]
-    ↓
-Manager subprocess [Vagrant SSH calls, LXD/Docker runner]
+    ├── :80  → nginx (ctfd.conf)
+    │              ├── /osint/*  → /var/www/osint/  [static OSINT assets]
+    │              └── /*        → CTFd (127.0.0.1:8900)
+    └── :8181 → nginx (orchestrator-api.conf)
+                   └── /*        → orchestrator API (127.0.0.1:18181)
+                                     └── Manager subprocess [Docker runner]
 ```
 
-The orchestrator API binds to **localhost only** (127.0.0.1:18181) for security; nginx acts as reverse proxy on 0.0.0.0:8181 for external access.
+Two nginx server blocks run on the VM:
+- **Port 80** (`/etc/nginx/sites-enabled/ctfd.conf`): front-proxy for CTFd + static OSINT serving
+- **Port 8181** (`/etc/nginx/sites-enabled/orchestrator-api.conf`): reverse proxy for the orchestrator API
+
+CTFd binds to **localhost only** (127.0.0.1:8900); the orchestrator API binds to **localhost only** (127.0.0.1:18181).
 
 ---
 
@@ -167,12 +171,9 @@ HTTP/1.1 502 Bad Gateway
 
 - **If config test fails:**
   ```bash
-  # Check the template for syntax errors
-  cat /etc/nginx/sites-enabled/orchestrator-api.conf
-  
-  # Sample correct config:
-  # upstream orchestrator_backend { server 127.0.0.1:18181; }
-  # server { listen 8181; location / { proxy_pass http://orchestrator_backend; } }
+  # Check both nginx configs
+  cat /etc/nginx/sites-enabled/ctfd.conf           # port 80: CTFd proxy + /osint/
+  cat /etc/nginx/sites-enabled/orchestrator-api.conf  # port 8181: orchestrator proxy
   ```
 
 - **If orchestrator isn't responding:**

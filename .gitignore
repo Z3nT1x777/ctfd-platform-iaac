@@ -42,3 +42,6 @@ secrets/
 flags.txt
 solutions/
 writeups/
+
+# Claude Code internals
+.claude/

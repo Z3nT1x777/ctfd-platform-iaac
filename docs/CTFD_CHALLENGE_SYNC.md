@@ -24,6 +24,65 @@ Benefits:
 - Default source: `challenges/`
 - Excludes templates/folders prefixed with `_`
 
+
+## OSINT static challenge: automatic link handling
+
+For OSINT static challenges (category: `osint`, type: `static`):
+
+- The `connection_info` field is automatically set to the static URL: `http://192.168.56.10/osint/<challenge-slug>/resources/`.
+- Any link of the form `http://...:PORT` found in the `description` field is automatically replaced by the correct static URL before publishing to CTFd.
+- This ensures that both the challenge card and the player instructions always display the correct access link, even if the YAML or README contained an old port-based link.
+- This logic is handled by the sync script (`sync_challenges_ctfd.py`) and applies to both new and existing challenges.
+
+**Example:**
+
+If your `challenge.yml` contains:
+
+```yaml
+description: |
+  1. Accède à la page du challenge :
+    http://192.168.56.10:5012
+  2. ...
+```
+
+After sync, the CTFd card will show:
+
+```text
+1. Accède à la page du challenge :
+  http://192.168.56.10/osint/metro-memory-trail/resources/
+2. ...
+```
+
+This is fully automatic and requires no manual update.
+
+---
+
+## OSINT static deployment architecture
+
+Les fichiers statiques OSINT sont gérés séparément du sync CTFd API. Deux déclencheurs :
+
+```mermaid
+flowchart TD
+    A[vagrant provision] -->|Ansible task| B[Create /var/www/osint/ - owner vagrant]
+    B --> C[Run sync_osint_static.py on VM]
+    C --> D[Copy resources/ → /var/www/osint/slug/resources/]
+    D --> E[nginx port 80: /osint/* served from /var/www/osint/]
+
+    F[Admin: add/update OSINT challenge] -->|Windows| G[.\scripts\sync_osint_static_remote.ps1]
+    F -->|Linux/VM| H[vagrant ssh -c python3 /vagrant/scripts/sync_osint_static.py --target /var/www/osint/]
+    G --> C
+    H --> C
+
+    I[sync_challenges_ctfd.py] -->|CTFd API only| J[Push metadata + flags to CTFd]
+    style E fill:#d4edda
+    style J fill:#d4edda
+```
+
+**Séparation des responsabilités :**
+- `sync_challenges_ctfd.py` → push vers l'API CTFd uniquement (métadonnées, flags)
+- `sync_osint_static.py` → copie des fichiers statiques vers `/var/www/osint/`
+- Ansible → gère nginx et crée `/var/www/osint/` au provisioning
+
 ## What is synced
 
 From each `challenge.yml`:
