@@ -59,21 +59,29 @@ This is fully automatic and requires no manual update.
 
 ## OSINT static deployment architecture
 
+Les fichiers statiques OSINT sont gérés séparément du sync CTFd API. Deux déclencheurs :
+
 ```mermaid
 flowchart TD
-    A[CI/CD or Admin: Trigger script sync_challenges_ctfd.py] --> B[Deploy challenges to CTFd via API]
-    B --> C{OSINT static challenge?}
-    C -- No --> D[End]
-    C -- Yes --> E[Trigger PowerShell wrapper sync_osint_static_remote.ps1]
-    E --> F[SSH to VM (vagrant@192.168.56.10)]
-    F --> G[Run on VM: python3 scripts/sync_osint_static.py --target /var/www/osint/]
-    G --> H[Copy resources/ of each OSINT challenge to /var/www/osint/<slug>/]
-    H --> I[Web access via nginx: http://192.168.56.10/osint/<slug>/resources/]
-    D --> Z[End]
-    I --> Z
-    style D fill:#eee
-    style Z fill:#eee
+    A[vagrant provision] -->|Ansible task| B[Create /var/www/osint/ - owner vagrant]
+    B --> C[Run sync_osint_static.py on VM]
+    C --> D[Copy resources/ → /var/www/osint/slug/resources/]
+    D --> E[nginx port 80: /osint/* served from /var/www/osint/]
+
+    F[Admin: add/update OSINT challenge] -->|Windows| G[.\scripts\sync_osint_static_remote.ps1]
+    F -->|Linux/VM| H[vagrant ssh -c python3 /vagrant/scripts/sync_osint_static.py --target /var/www/osint/]
+    G --> C
+    H --> C
+
+    I[sync_challenges_ctfd.py] -->|CTFd API only| J[Push metadata + flags to CTFd]
+    style E fill:#d4edda
+    style J fill:#d4edda
 ```
+
+**Séparation des responsabilités :**
+- `sync_challenges_ctfd.py` → push vers l'API CTFd uniquement (métadonnées, flags)
+- `sync_osint_static.py` → copie des fichiers statiques vers `/var/www/osint/`
+- Ansible → gère nginx et crée `/var/www/osint/` au provisioning
 
 ## What is synced
 

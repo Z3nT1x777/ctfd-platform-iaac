@@ -148,8 +148,8 @@
       file:
         path: "{{ osint_static_web_root }}"
         state: directory
-        owner: www-data
-        group: www-data
+        owner: vagrant
+        group: vagrant
         mode: '0755'
 
     - name: Install CTFd frontend nginx config (port 80 + /osint/ static)

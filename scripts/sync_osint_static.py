@@ -1,121 +1,79 @@
 #!/usr/bin/env python3
 """
-Synchronise tous les challenges OSINT statiques (dossiers resources/) vers un dossier web cible (ex: /var/www/osint/).
-Usage :
-    python scripts/sync_osint_static.py --target /var/www/osint/
+Synchronise les challenges OSINT statiques vers le dossier web nginx.
 
-- Parcourt tous les dossiers challenges/osint/*/resources/
-- Copie chaque dossier dans <target>/<challenge>/
-- Écrase les fichiers existants
+Pour chaque challenges/osint/<slug>/resources/ trouvé, copie le contenu vers
+<target>/<slug>/resources/.
+
+Usage (dans la VM via vagrant ssh ou depuis le playbook Ansible) :
+    python3 /vagrant/scripts/sync_osint_static.py --target /var/www/osint/
+
+Prérequis : le dossier cible doit exister et être accessible en écriture par
+l'utilisateur courant. Ansible s'en charge à la création de la VM
+(task "Create OSINT static web root").
 """
 import argparse
 import shutil
-from pathlib import Path
 import sys
+from pathlib import Path
 
-def sync_osint_resources(challenges_root: Path, target_root: Path):
+
+def sync_osint_resources(challenges_root: Path, target_root: Path) -> int:
+    """Copie chaque resources/ vers target_root/<slug>/resources/. Retourne le nb copiés."""
     osint_dir = challenges_root / "osint"
     if not osint_dir.exists():
-        print(f"[ERREUR] Dossier {osint_dir} introuvable.")
-        sys.exit(1)
-    for challenge in osint_dir.iterdir():
+        print(f"[ERREUR] Dossier osint introuvable : {osint_dir}", file=sys.stderr)
+        return 0
+
+    synced = 0
+    for challenge in sorted(osint_dir.iterdir()):
+        if not challenge.is_dir() or challenge.name.startswith("_"):
+            continue
         resources = challenge / "resources"
-        if resources.exists() and resources.is_dir():
-            dest_dir = target_root / challenge.name
-            dest = dest_dir / "resources"
+        if not resources.is_dir():
+            print(f"[SKIP]  {challenge.name} — pas de dossier resources/")
+            continue
 
-            # Nettoyage automatique de tout sauf resources/ dans le dossier cible
-            if dest_dir.exists():
-                for item in dest_dir.iterdir():
-                    if item.name != "resources":
-                        try:
-                            if item.is_dir():
-                                shutil.rmtree(item)
-                            else:
-                                item.unlink()
-                            print(f"[CLEAN] {item} supprimé du dossier cible.")
-                        except PermissionError:
-                            import subprocess
-                            print(f"[WARN] Permission refusée pour supprimer {item}, tentative avec sudo rm -rf...")
-                            result = subprocess.run(["sudo", "rm", "-rf", str(item)])
-                            if result.returncode == 0:
-                                print(f"[INFO] {item} supprimé avec sudo.")
-                            else:
-                                print(f"[ERREUR] Impossible de supprimer {item} même avec sudo.")
-                                continue
-            # Suppression du dossier resources/ cible s'il existe
-            if dest.exists():
-                try:
-                    shutil.rmtree(dest)
-                except PermissionError:
-                    import subprocess
-                    print(f"[WARN] Permission refusée pour supprimer {dest}, tentative avec sudo rm -rf...")
-                    result = subprocess.run(["sudo", "rm", "-rf", str(dest)])
-                    if result.returncode == 0:
-                        print(f"[INFO] Dossier {dest} supprimé avec sudo.")
-                    else:
-                        print(f"[ERREUR] Impossible de supprimer {dest} même avec sudo.")
-                        continue
-                    # Correction des droits sur tout /var/www/osint après suppression sudo
-                    chown_result = subprocess.run([
-                        "sudo", "chown", "-R", "vagrant:vagrant", str(target_root)
-                    ])
-                    if chown_result.returncode == 0:
-                        print(f"[INFO] Droits corrigés sur {target_root} (vagrant:vagrant)")
-                        # Correction des permissions pour permettre la création de sous-dossiers
-                        chmod_result = subprocess.run([
-                            "sudo", "chmod", "775", str(target_root)
-                        ])
-                        if chmod_result.returncode == 0:
-                            print(f"[INFO] Permissions corrigées (775) sur {target_root}")
-                        else:
-                            print(f"[WARN] Impossible de corriger les permissions sur {target_root}")
-                    else:
-                        print(f"[WARN] Impossible de corriger les droits sur {target_root}")
-            # Ne surtout pas créer le dossier cible avant copytree (sinon FileExistsError)
-            shutil.copytree(resources, dest)
-            print(f"[OK] {resources} -> {dest}")
-        else:
-            print(f"[WARN] Pas de dossier resources/ pour {challenge.name}")
+        dest = target_root / challenge.name / "resources"
+        if dest.exists():
+            shutil.rmtree(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(resources, dest)
+        print(f"\033[36m[OK]\033[0m   {challenge.name}/resources → {dest}")
+        synced += 1
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Synchronise les challenges OSINT statiques vers un dossier web cible.")
-    parser.add_argument("--target", required=True, help="Dossier cible (ex: /var/www/osint/)")
-    parser.add_argument("--challenges-root", default="challenges", help="Racine des challenges (défaut: challenges)")
+    return synced
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Sync OSINT static challenges to nginx web root.")
+    parser.add_argument("--target", required=True, help="Web root cible (ex: /var/www/osint/)")
+    parser.add_argument(
+        "--challenges-root",
+        default=str(Path(__file__).resolve().parents[1] / "challenges"),
+        help="Racine des challenges (défaut: <repo>/challenges)",
+    )
     args = parser.parse_args()
 
-    challenges_root = Path(args.challenges_root).resolve()
     target_root = Path(args.target).resolve()
+    challenges_root = Path(args.challenges_root).resolve()
 
-
-    # Création automatique du dossier cible si absent
     if not target_root.exists():
-        try:
-            target_root.mkdir(parents=True, exist_ok=True)
-            print(f"[INFO] Dossier cible {target_root} créé automatiquement.")
-        except PermissionError as e:
-            # Tente avec sudo si PermissionError
-            import subprocess
-            print(f"[WARN] Permission refusée pour créer {target_root}, tentative avec sudo...")
-            result = subprocess.run([
-                "sudo", "mkdir", "-p", str(target_root)
-            ])
-            if result.returncode == 0:
-                print(f"[INFO] Dossier cible {target_root} créé avec sudo.")
-                # Correction des droits pour l'utilisateur vagrant
-                chown_result = subprocess.run([
-                    "sudo", "chown", "-R", "vagrant:vagrant", str(target_root)
-                ])
-                if chown_result.returncode == 0:
-                    print(f"[INFO] Droits corrigés sur {target_root} (vagrant:vagrant)")
-                else:
-                    print(f"[WARN] Impossible de corriger les droits sur {target_root}")
-            else:
-                print(f"[ERREUR] Impossible de créer le dossier cible {target_root} même avec sudo.")
-                sys.exit(1)
-        except Exception as e:
-            print(f"[ERREUR] Impossible de créer le dossier cible {target_root} : {e}")
-            sys.exit(1)
+        print(
+            f"[ERREUR] Le dossier cible n'existe pas : {target_root}\n"
+            "         Lancez d'abord 'vagrant provision' pour le créer via Ansible.",
+            file=sys.stderr,
+        )
+        return 1
 
-    sync_osint_resources(challenges_root, target_root)
-    print("Synchronisation OSINT statique terminée.")
+    if not challenges_root.exists():
+        print(f"[ERREUR] Dossier challenges introuvable : {challenges_root}", file=sys.stderr)
+        return 1
+
+    synced = sync_osint_resources(challenges_root, target_root)
+    print(f"\nTerminé — {synced} challenge(s) OSINT synchronisé(s) vers {target_root}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
