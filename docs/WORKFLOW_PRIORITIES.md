@@ -373,6 +373,76 @@ done
 
 ---
 
+---
+
+## P4: OSINT Static Challenges (nginx)
+
+**Goal:** Serve OSINT static challenge assets (HTML, images, documents) via nginx at `http://192.168.56.10/osint/<slug>/resources/` — no Docker required for static challenges.
+
+**Status:** ✅ **COMPLETE** (merged via PR#2)
+
+### Architecture
+
+- nginx VM-level proxy (port 80): serves `/osint/*` from `/var/www/osint/` + proxies everything else to CTFd (`127.0.0.1:8900`)
+- CTFd runs internally on `127.0.0.1:8900` (no longer bound to port 80)
+- `sync_osint_static.py`: copies `challenges/osint/*/resources/` → `/var/www/osint/<slug>/resources/`
+- Triggered automatically by `vagrant provision` (Ansible task) and manually via `.\scripts\sync_osint_static_remote.ps1`
+- `sync_challenges_ctfd.py` auto-corrects description links for `type: static` OSINT challenges before pushing to CTFd API
+
+### Verification
+
+```bash
+# OSINT static file (should return 200)
+curl -I http://192.168.56.10/osint/metro-memory-trail/resources/
+
+# CTFd (should return 200 or 302)
+curl -I http://192.168.56.10
+```
+
+---
+
+## P5: Production Hardening (Ansible Vault + Monitoring)
+
+**Goal:** All secrets managed via Ansible Vault; Grafana auto-provisioned with Prometheus datasource and CTF operations dashboard.
+
+**Status:** ✅ **COMPLETE**
+
+### What was done
+
+#### Ansible Vault
+- `ansible/vars/vault.example.yml` now covers all 6 secrets: DB passwords, orchestrator tokens, Grafana admin password
+- Playbook builds `grafana_admin_password_effective` from vault override (or dev default `admin`)
+- `security-preflight.py` detects `grafana_admin_password: "admin"` in `main.yml` and hardcoded `GF_SECURITY_ADMIN_PASSWORD=admin` in templates
+
+#### Grafana auto-provisioning
+- `ansible/templates/grafana-datasource.yml.j2`: Prometheus datasource provisioned on first provision
+- `ansible/templates/grafana-dashboard-provider.yml.j2`: Dashboard folder provider pointing to `/var/lib/grafana/dashboards`
+- `ansible/grafana-dashboards/ctf-ops.json`: CTF Operations dashboard (VM CPU/RAM/Disk, container count, container CPU/RAM trends)
+- `docker-compose-monitoring.yml.j2`: Grafana admin password from vault variable; provisioning dirs mounted
+
+#### Security preflight
+- Detects `grafana_admin_password: "admin"` (default credential warning)
+- Detects hardcoded `GF_SECURITY_ADMIN_PASSWORD=admin` in monitoring template
+
+### Production deployment
+
+```bash
+# 1. Create vault
+cp ansible/vars/vault.example.yml ansible/vars/vault.yml
+ansible-vault encrypt ansible/vars/vault.yml
+ansible-vault edit ansible/vars/vault.yml   # fill in all REPLACE_ME values
+
+# 2. Provision
+vagrant provision
+# Or on a remote host:
+# ansible-playbook ansible/playbooks/main.yml --vault-password-file=/path/to/vault-pass.txt
+
+# 3. Verify Grafana
+# http://192.168.56.10:3000 → login with your vault password → CTF folder → CTF Operations
+```
+
+---
+
 ## Current Status Summary
 
 | Priority | Objective | Status | Evidence |
@@ -381,19 +451,19 @@ done
 | **P1** | Challenge authoring workflow | ✅ COMPLETE | Templates, validation scripts, example challenges |
 | **P2** | Git / PR workflow | ✅ COMPLETE | Protected main branch, PR rules, CI/CD |
 | **P3** | Security hardening | ✅ COMPLETE | All 10 controls implemented, tested, documented |
+| **P4** | OSINT static challenges | ✅ COMPLETE | nginx serves /osint/, CTFd on internal port 8900 |
+| **P5** | Prod hardening + monitoring | ✅ COMPLETE | Vault covers all secrets, Grafana auto-provisioned |
 
 ---
 
-## Next Steps Beyond P3
+## Next Steps (P6+)
 
 Possible future enhancements (not yet prioritized):
 
+- **Orchestrator `/metrics` endpoint:** Prometheus scraping for orchestrator-level metrics (active instances per team, spawn time histograms, rate limit counters)
 - **Multi-team tournaments:** Scoreboard, live leaderboards, team submissions
 - **Challenge auto-generation:** Create challenges from code templates
-- **Advanced analytics:** Challenge difficulty metrics, time-to-solve distributions
-- **Discord/Slack integration:** Real-time notifications on challenge completions
 - **Kubernetes deployment:** Scale from VirtualBox to cloud (AWS, Azure, GCP)
-- **Advanced monitoring:** Prometheus/Grafana for infrastructure metrics
 - **SAML/LDAP auth:** Enterprise user directory integration
 - **Backup/restore:** Automated challenge instance snapshots
 

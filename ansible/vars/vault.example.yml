@@ -4,9 +4,13 @@
 #   ansible-vault encrypt ansible/vars/vault.yml
 #
 # These values override defaults from ansible/vars/main.yml when vault.yml exists.
+# Use strong, randomly generated secrets for production:
+#   openssl rand -hex 32   → 64-char hex string (good for signing secrets)
+#   openssl rand -base64 24 → URL-safe password (good for tokens/passwords)
 
 DB_ROOT_PASSWORD: "REPLACE_ME"
 DB_PASSWORD: "REPLACE_ME"
 orchestrator_api_token: "REPLACE_ME"
 orchestrator_signing_secret: "REPLACE_ME"
 orchestrator_ctfd_webhook_token: "REPLACE_ME"
+grafana_admin_password: "REPLACE_ME"

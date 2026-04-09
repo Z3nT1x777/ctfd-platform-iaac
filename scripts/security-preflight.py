@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VARS_FILE = REPO_ROOT / "ansible" / "vars" / "main.yml"
 VAULT_FILE = REPO_ROOT / "ansible" / "vars" / "vault.yml"
+MONITORING_TEMPLATE = REPO_ROOT / "ansible" / "templates" / "docker-compose-monitoring.yml.j2"
 
 DEFAULTS = {
     "DB_ROOT_PASSWORD": "RootPassword123!",
@@ -15,6 +16,7 @@ DEFAULTS = {
     "orchestrator_api_token": "ChangeMe-Orchestrator-Token",
     "orchestrator_signing_secret": "ChangeMe-Orchestrator-Signing-Secret",
     "orchestrator_ctfd_webhook_token": "ChangeMe-CTFd-Webhook-Token",
+    "grafana_admin_password": "admin",
 }
 
 
@@ -40,7 +42,15 @@ def main() -> int:
     for key, default in DEFAULTS.items():
         needle = f'{key}: "{default}"'
         if needle in content:
-            failures.append(f"{key} is still using a development default")
+            failures.append(f"{key} is still using a development default ({default!r})")
+
+    # Also check for hardcoded Grafana password in monitoring template (belt-and-suspenders)
+    if MONITORING_TEMPLATE.exists():
+        template_content = MONITORING_TEMPLATE.read_text(encoding="utf-8")
+        if "GF_SECURITY_ADMIN_PASSWORD=admin" in template_content:
+            failures.append(
+                "docker-compose-monitoring.yml.j2 has hardcoded GF_SECURITY_ADMIN_PASSWORD=admin"
+            )
 
     if failures:
         print("Security preflight warnings:")

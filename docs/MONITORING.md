@@ -47,9 +47,9 @@ After provisioning (wait 10-15 seconds for services to start):
 - Example: `container_memory_usage_bytes{name=~"ctf.*"}`
 
 **Grafana UI:** http://192.168.56.10:3000
-- Default credentials: `admin:admin` (change in production!)
-- Prometheus data source pre-configured
-- Import dashboards (see section below)
+- Default credentials: `admin:admin` — **override `grafana_admin_password` in vault before production**
+- Prometheus data source auto-provisioned (no manual setup required)
+- CTF Operations dashboard pre-loaded (CPU, Memory, Disk, Containers)
 
 ---
 
@@ -222,14 +222,13 @@ Legend: Team names
 
 ### Before Tournament
 
-- [ ] Uncommented `monitoring` in playbook
+- [ ] `vault.yml` has a strong `grafana_admin_password` (not `admin`)
 - [ ] `vagrant provision` completed successfully
 - [ ] Prometheus scrape targets showing "UP" (http://192.168.56.10:9090/targets)
 - [ ] Grafana accessible, data flowing (http://192.168.56.10:3000)
-- [ ] Changed Grafana default password from `admin:admin`
-- [ ] Created alert notifications (Slack webhook, email, etc.)
-- [ ] Set up dashboard for ops team display
-- [ ] Configured retention (default: 15 GB, ~15 days of data)
+- [ ] CTF Operations dashboard visible in Grafana → Dashboards → CTF folder
+- [ ] Grafana default password changed (or confirmed vault override is active)
+- [ ] Retention configured as needed (default: 15 days — adjust in docker-compose template)
 
 ### During Tournament
 
@@ -385,9 +384,9 @@ scrape_configs:
 
 ## Next Steps
 
-1. ✅ Enable monitoring via playbook uncomment
-2. ✅ Access Grafana dashboard
-3. ⚠️ Create custom dashboards for ops team
-4. ⚠️ Set up alerting channels (Slack, email)
-5. ⚠️ Add orchestrator API metrics endpoint (future)
-6. ⚠️ Configure long-term storage (S3, InfluxDB)
+1. ✅ Enable monitoring stack (Prometheus + Grafana + Node Exporter + cAdvisor)
+2. ✅ Prometheus datasource auto-provisioned on first `vagrant provision`
+3. ✅ CTF Operations dashboard auto-loaded (VM + container metrics)
+4. ✅ Grafana admin password via Ansible Vault (`grafana_admin_password`)
+5. ⚠️ Set up Grafana alerting channels if needed (Slack, email — out of scope for this platform)
+6. ⚠️ Add orchestrator API `/metrics` endpoint (P6 — future enhancement)
