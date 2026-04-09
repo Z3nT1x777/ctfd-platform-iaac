@@ -27,6 +27,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /vagrant/scripts/ctfd-orchestrator-plugin:/opt/CTFd/CTFd/plugins/ctfd_orchestrator_plugin
       - /vagrant/challenges:/vagrant/challenges:ro
+      - /var/www/osint:/var/www/osint:ro
+      - /vagrant/ansible/docker/ctfd/osint-static.conf:/etc/nginx/conf.d/osint-static.conf:ro
     depends_on:
       - db
       - cache

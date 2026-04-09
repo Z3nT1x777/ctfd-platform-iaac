@@ -100,6 +100,11 @@ if [[ "$CHALLENGE_TYPE" == "docker" ]]; then
 fi
 
 echo "Challenge created: $TARGET_PATH"
+if [[ "$FAMILY" == "osint" ]]; then
+  sed -i.bak -E "s|^connection_info:.*|connection_info: http://192.168.56.10/osint/$NAME/resources/|" "$CHALLENGE_YML"
+  rm -f "$CHALLENGE_YML.bak"
+  echo "Lien d'accès statique : http://192.168.56.10/osint/$NAME/resources/"
+fi
 if [[ "$CHALLENGE_TYPE" == "docker" ]]; then
   echo "Assigned port: $PORT"
 fi

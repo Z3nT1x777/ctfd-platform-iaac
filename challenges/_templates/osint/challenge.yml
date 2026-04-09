@@ -1,11 +1,18 @@
 name: Challenge Name
 category: osint
 value: 100
+# difficulty: Easy  # (optionnel, voir validation/CI)
 type: static
-connection_mode: instruction
-access_instructions: |
-  Investigate public artifacts and submit the flag.
 description: |
   Investigate public artifacts and submit the flag.
 
 flag: CTF{example_osint_flag}
+
+authors:
+  - Your Name
+# tags:
+#   - osint
+instance:
+  type: static
+  resources_dir: resources/
+connection_info: http://192.168.56.10/osint/<challenge-slug>/resources/

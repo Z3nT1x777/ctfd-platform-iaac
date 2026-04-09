@@ -131,6 +131,15 @@ def build_spec(challenge_dir: Path) -> ChallengeSpec:
     value = int(value_raw or "100")
     challenge_type = str(raw.get("type", "docker")).strip() or "docker"
     description = str(raw.get("description", "")).strip()
+    # Correction automatique du lien dans la description pour OSINT statique
+    if category == "osint" and challenge_type == "static":
+        import re
+        # Remplace tout lien http://...:PORT par l'URL statique
+        description = re.sub(
+            r"http://[\w\.-]+:\d+",
+            f"http://192.168.56.10/osint/{challenge_dir.name}/resources/",
+            description,
+        )
     flag = str(raw.get("flag", "")).strip()
 
     if not flag:
@@ -442,6 +451,57 @@ def main() -> int:
     print(
         f"Done. total={len(specs)} created={created} updated={updated} dry_run={args.dry_run}"
     )
+
+
+    # --- Synchronisation OSINT statique automatique ---
+    import platform
+    if platform.system().lower().startswith("win"):
+        # Sur Windows, on utilise le wrapper PowerShell pour synchroniser sur la VM
+        remote_wrapper = REPO_ROOT / "scripts" / "sync_osint_static_remote.ps1"
+        if remote_wrapper.exists():
+            print("[INFO] Lancement de la synchronisation OSINT statique sur la VM via PowerShell...")
+            import subprocess
+            result = subprocess.run([
+                "powershell", "-ExecutionPolicy", "Bypass", "-File", str(remote_wrapper)
+            ], capture_output=True, text=True)
+            print(result.stdout)
+            print(result.stderr)
+        else:
+            print("[INFO] Wrapper PowerShell de synchro OSINT manquant : sync_osint_static_remote.ps1")
+    else:
+        # Sur Linux/VM, synchro locale classique
+        osint_sync_script = REPO_ROOT / "scripts" / "sync_osint_static.py"
+        osint_target = Path("/var/www/osint/")
+        if osint_sync_script.exists():
+            try:
+                if not osint_target.exists():
+                    osint_target.mkdir(parents=True, exist_ok=True)
+                    print(f"[INFO] Dossier cible {osint_target} créé automatiquement.")
+            except Exception as e:
+                print(f"[ERREUR] Impossible de créer le dossier cible {osint_target} : {e}")
+                print("[INFO] Synchronisation OSINT statique SKIPPED (erreur création dossier)")
+                return 1
+
+            print("\n[INFO] Synchronisation OSINT statique...")
+            import subprocess
+            result = subprocess.run([
+                sys.executable, str(osint_sync_script), "--target", str(osint_target)
+            ], capture_output=True, text=True)
+            # Affichage coloré des résultats
+            osint_created = 0
+            osint_updated = 0
+            for line in result.stdout.splitlines():
+                if line.startswith("[OK]"):
+                    print(f"\033[36m{line}\033[0m")  # cyan
+                    osint_updated += 1
+                elif line.startswith("[WARN]"):
+                    print(f"\033[33m{line}\033[0m")  # jaune
+                elif line.strip():
+                    print(line)
+            print(f"[INFO] OSINT statique synchronisé : {osint_updated} challenges copiés dans /var/www/osint/")
+        else:
+            print("[INFO] Synchronisation OSINT statique SKIPPED (script manquant)")
+
     return 0
 
 

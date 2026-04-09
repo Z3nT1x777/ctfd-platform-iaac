@@ -24,6 +24,57 @@ Benefits:
 - Default source: `challenges/`
 - Excludes templates/folders prefixed with `_`
 
+
+## OSINT static challenge: automatic link handling
+
+For OSINT static challenges (category: `osint`, type: `static`):
+
+- The `connection_info` field is automatically set to the static URL: `http://192.168.56.10/osint/<challenge-slug>/resources/`.
+- Any link of the form `http://...:PORT` found in the `description` field is automatically replaced by the correct static URL before publishing to CTFd.
+- This ensures that both the challenge card and the player instructions always display the correct access link, even if the YAML or README contained an old port-based link.
+- This logic is handled by the sync script (`sync_challenges_ctfd.py`) and applies to both new and existing challenges.
+
+**Example:**
+
+If your `challenge.yml` contains:
+
+```yaml
+description: |
+  1. Accède à la page du challenge :
+    http://192.168.56.10:5012
+  2. ...
+```
+
+After sync, the CTFd card will show:
+
+```text
+1. Accède à la page du challenge :
+  http://192.168.56.10/osint/metro-memory-trail/resources/
+2. ...
+```
+
+This is fully automatic and requires no manual update.
+
+---
+
+## OSINT static deployment architecture
+
+```mermaid
+flowchart TD
+    A[CI/CD or Admin: Trigger script sync_challenges_ctfd.py] --> B[Deploy challenges to CTFd via API]
+    B --> C{OSINT static challenge?}
+    C -- No --> D[End]
+    C -- Yes --> E[Trigger PowerShell wrapper sync_osint_static_remote.ps1]
+    E --> F[SSH to VM (vagrant@192.168.56.10)]
+    F --> G[Run on VM: python3 scripts/sync_osint_static.py --target /var/www/osint/]
+    G --> H[Copy resources/ of each OSINT challenge to /var/www/osint/<slug>/]
+    H --> I[Web access via nginx: http://192.168.56.10/osint/<slug>/resources/]
+    D --> Z[End]
+    I --> Z
+    style D fill:#eee
+    style Z fill:#eee
+```
+
 ## What is synced
 
 From each `challenge.yml`:

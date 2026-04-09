@@ -1,9 +1,3 @@
-# Challenge Authoring & Deployment Guide
-
-This document defines the standard process to create, validate, deploy, and test challenges using the orchestrator per-team instance model.
-
----
-
 ## Challenge Template Structure
 
 Challenge templates are maintained in [challenges/_templates](../challenges/_templates), grouped by family:

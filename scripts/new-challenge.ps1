@@ -86,6 +86,10 @@ if ($challengeType -eq 'docker' -and (Test-Path $composeYml)) {
 }
 
 Write-Host "Challenge created: $targetPath"
+if ($Family -eq 'osint') {
+    (Get-Content $challengeYml -Raw) -replace '(?m)^connection_info:.*$', ("connection_info: http://192.168.56.10/osint/$Name/resources/") | Set-Content $challengeYml
+    Write-Host "Lien d'accès statique : http://192.168.56.10/osint/$Name/resources/"
+}
 if ($challengeType -eq 'docker') {
     Write-Host "Assigned port: $Port"
 }
