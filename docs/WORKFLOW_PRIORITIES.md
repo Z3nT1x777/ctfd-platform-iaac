@@ -456,16 +456,67 @@ vagrant provision
 
 ---
 
-## Next Steps (P6+)
+## P6: Orchestrator Metrics Endpoint
 
-Possible future enhancements (not yet prioritized):
+**Goal:** Expose Prometheus metrics from the orchestrator API (`/metrics`) so Grafana can display per-team instance counts, spawn times, and rate limit events without polling logs.
 
-- **Orchestrator `/metrics` endpoint:** Prometheus scraping for orchestrator-level metrics (active instances per team, spawn time histograms, rate limit counters)
-- **Multi-team tournaments:** Scoreboard, live leaderboards, team submissions
-- **Challenge auto-generation:** Create challenges from code templates
-- **Kubernetes deployment:** Scale from VirtualBox to cloud (AWS, Azure, GCP)
-- **SAML/LDAP auth:** Enterprise user directory integration
-- **Backup/restore:** Automated challenge instance snapshots
+**Status:** ⏳ NOT STARTED
+
+### Scope
+
+- Add `prometheus_client` to `player-instance-api.py`
+- Counters: `orchestrator_requests_total`, `orchestrator_rate_limit_exceeded_total`
+- Histograms: `orchestrator_instance_spawn_seconds`
+- Gauge: `orchestrator_active_instances` (by team)
+- Expose on `/metrics` (localhost only, scrape via Prometheus)
+- Update `prometheus.yml.j2` scrape config to add orchestrator target
+- Add orchestrator panels to `ctf-ops.json` Grafana dashboard
+
+---
+
+## P7: Plugin UI/UX Refactor
+
+**Goal:** Replace the current functional-but-rough orchestrator plugin pages (launch page, team dashboard) with a polished UI that feels like a finished product, not a dev prototype.
+
+**Status:** ⏳ NOT STARTED
+
+### Known issues to fix
+
+- Launch page: colors too contrasted (neon green `ok` + bright red `bad`), awkward button layout
+- Status dots and labels: replace hardcoded inline styles with a coherent design system
+- Auto-redirect countdown bar: too prominent
+- Team dashboard: improve spacing, hierarchy, typography
+- Overall: bring CSS variables in line with CTFd's own dark theme palette (softer greens/reds, more neutral grays)
+
+### Scope (plugin files)
+
+- `scripts/ctfd-orchestrator-plugin/plugin.py` — HTML/CSS inline in the launch page template
+- `scripts/ctfd-orchestrator-plugin/assets/orchestrator-ui.js` — floating button style
+
+---
+
+## Current Status Summary
+
+| Priority | Objective | Status | Evidence |
+|----------|-----------|--------|----------|
+| **P0** | Infrastructure stability | ✅ COMPLETE | `vagrant up` provisions all services reliably |
+| **P1** | Challenge authoring workflow | ✅ COMPLETE | Templates, validation scripts, example challenges |
+| **P2** | Git / PR workflow | ✅ COMPLETE | Protected main branch, PR rules, CI/CD |
+| **P3** | Security hardening | ✅ COMPLETE | All 10 controls implemented, tested, documented |
+| **P4** | OSINT static challenges | ✅ COMPLETE | nginx serves /osint/, CTFd on internal port 8900 |
+| **P5** | Prod hardening + monitoring | ✅ COMPLETE | Vault covers all secrets, Grafana auto-provisioned |
+| **P6** | Orchestrator metrics | ⏳ NOT STARTED | — |
+| **P7** | Plugin UI/UX refactor | ⏳ NOT STARTED | — |
+
+---
+
+## Backlog (non-prioritized)
+
+- Multi-team tournaments: scoreboard, live leaderboards
+- Challenge auto-generation from templates
+- Kubernetes deployment (scale to cloud)
+- SAML/LDAP authentication
+- Automated backup/restore of challenge instances
 
 ---
 
