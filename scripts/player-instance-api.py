@@ -13,6 +13,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+try:
+    from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
+    _PROM_AVAILABLE = True
+except ImportError:
+    _PROM_AVAILABLE = False
+
 MANAGER = "/opt/ctf/orchestrator/player-instance-manager.sh"
 API_TOKEN = os.environ.get("ORCHESTRATOR_API_TOKEN", "")
 RATE_LIMIT_PER_MIN = int(os.environ.get("ORCHESTRATOR_RATE_LIMIT_PER_MIN", "60"))
@@ -25,6 +31,59 @@ AUDIT_LOG_PATH = os.environ.get("ORCHESTRATOR_AUDIT_LOG", "/var/log/ctf/orchestr
 CTFD_WEBHOOK_TOKEN = os.environ.get("ORCHESTRATOR_CTFD_WEBHOOK_TOKEN", "")
 SIGNATURE_TTL_SEC = int(os.environ.get("ORCHESTRATOR_SIGNATURE_TTL_SEC", "300"))
 UI_REQUIRE_TOKEN = os.environ.get("ORCHESTRATOR_UI_REQUIRE_TOKEN", "1") == "1"
+
+# Prometheus metrics (no-op if prometheus_client not installed)
+if _PROM_AVAILABLE:
+    _prom_requests = Counter(
+        "orchestrator_requests_total",
+        "Total API requests",
+        ["endpoint", "status"],
+    )
+    _prom_rate_limited = Counter(
+        "orchestrator_rate_limit_exceeded_total",
+        "Rate limit exceeded events",
+        ["kind"],  # client | team
+    )
+    _prom_spawn_seconds = Histogram(
+        "orchestrator_spawn_duration_seconds",
+        "Instance spawn duration in seconds",
+        buckets=[0.5, 1, 2, 5, 10, 20, 30, 60],
+    )
+    _prom_active_instances = Gauge(
+        "orchestrator_active_instances",
+        "Currently running challenge instances",
+    )
+
+
+def _prom_inc_request(endpoint: str, status: int) -> None:
+    if _PROM_AVAILABLE:
+        _prom_requests.labels(endpoint=endpoint, status=str(status)).inc()
+
+
+def _prom_inc_rate_limit(kind: str) -> None:
+    if _PROM_AVAILABLE:
+        _prom_rate_limited.labels(kind=kind).inc()
+
+
+def _prom_observe_spawn(seconds: float) -> None:
+    if _PROM_AVAILABLE:
+        _prom_spawn_seconds.observe(seconds)
+
+
+def _prom_refresh_active() -> None:
+    """Recount running instances and update the gauge."""
+    if not _PROM_AVAILABLE:
+        return
+    try:
+        code, out, _ = run_manager(["status"])
+        if code == 0:
+            count = sum(
+                1 for row in parse_status_lines(out) if row.get("state") == "running"
+            )
+            _prom_active_instances.set(count)
+    except Exception:
+        pass
+
 
 _rate_lock = threading.Lock()
 _rate_state: dict[str, collections.deque[float]] = {}
@@ -356,6 +415,7 @@ class Handler(BaseHTTPRequestHandler):
         return team
 
     def _audit_http(self, event: str, status: int, path: str, team: str = "", challenge: str = "", detail: str = "") -> None:
+        _prom_inc_request(path, status)
         write_audit(
             event,
             http_status=status,
@@ -369,6 +429,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
+        if path == "/metrics":
+            if _PROM_AVAILABLE:
+                _prom_refresh_active()
+                body = generate_latest(REGISTRY)
+                self.send_response(200)
+                self.send_header("Content-Type", CONTENT_TYPE_LATEST)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self._json_response(503, {"error": "prometheus_client not installed"})
+            return
         if path in ["/", "/ui"]:
             if UI_REQUIRE_TOKEN and API_TOKEN:
                 query = parse_qs(parsed.query)
@@ -395,6 +467,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if is_rate_limited(self._get_client_id()):
+            _prom_inc_rate_limit("client")
             self._audit_http("rate_limited_client", 429, path)
             self._json_response(429, {"ok": False, "error": "rate_limit_exceeded"})
             return
@@ -414,6 +487,7 @@ class Handler(BaseHTTPRequestHandler):
         challenge = str(data.get("challenge", "")).strip()
 
         if team and is_team_rate_limited(team):
+            _prom_inc_rate_limit("team")
             payload = {"ok": False, "error": "team_rate_limit_exceeded"}
             return 429, payload
 
@@ -470,7 +544,10 @@ class Handler(BaseHTTPRequestHandler):
         else:
             return 404, {"ok": False, "error": "not_found"}
 
+        _spawn_t0 = time.time()
         code, out, err = run_manager(args)
+        if path == "/start":
+            _prom_observe_spawn(time.time() - _spawn_t0)
         payload = {"ok": code == 0, "stdout": out, "stderr": err}
         return (200 if code == 0 else 400), payload
 
@@ -530,6 +607,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if is_rate_limited(self._get_client_id()):
+            _prom_inc_rate_limit("client")
             self._audit_http("rate_limited_client", 429, path, team=team, challenge=challenge)
             self._json_response(429, {"ok": False, "error": "rate_limit_exceeded"})
             return

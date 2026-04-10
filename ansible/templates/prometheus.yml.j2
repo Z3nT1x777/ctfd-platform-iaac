@@ -14,3 +14,8 @@ scrape_configs:
   - job_name: cadvisor
     static_configs:
       - targets: ['cadvisor:8080']
+
+  - job_name: orchestrator
+    static_configs:
+      - targets: ['host.docker.internal:18181']
+    metrics_path: /metrics

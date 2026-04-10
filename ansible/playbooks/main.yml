@@ -25,6 +25,12 @@
           - git
         state: present
 
+    - name: Install prometheus_client for orchestrator metrics
+      pip:
+        name: prometheus_client
+        state: present
+        executable: pip3
+
     - name: Load optional vaulted overrides
       include_vars:
         file: ../vars/vault.yml
