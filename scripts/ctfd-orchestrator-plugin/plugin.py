@@ -1501,8 +1501,8 @@ class OrchestrationPlugin:
             )
             if not status_running and status_row is None:
                 status_running = bool(url and not url.endswith(":0") and expires > int(time.time()))
-            status_title = "Instance launched" if status_running else "Instance down"
-            status_class = "ok" if status_running else "bad"
+            status_title = "Instance launched" if status_running else "Not started"
+            status_class = "ok" if status_running else "warn"
             if not status_running:
                 status_ttl_remaining = 0
 
@@ -1567,6 +1567,10 @@ class OrchestrationPlugin:
 """
                     )
 
+            ttl_m = status_ttl_remaining // 60
+            ttl_s = status_ttl_remaining % 60
+            ttl_formatted = f"{ttl_m}m {ttl_s:02d}s" if status_ttl_remaining > 0 else "—"
+
             html_page = f"""
 <!doctype html>
 <html lang=\"en\">
@@ -1581,8 +1585,9 @@ class OrchestrationPlugin:
             --surface: #0d1624;
             --text: #e6edf7;
             --muted: #9aa8bc;
-            --ok: #22c55e;
-            --bad: #ef4444;
+            --ok: #34d399;
+            --bad: #f87171;
+            --warn: #f59e0b;
             --btn-primary: #2563eb;
             --btn-secondary: #0f1a2a;
             --ring: rgba(59, 130, 246, 0.18);
@@ -1633,6 +1638,11 @@ class OrchestrationPlugin:
         .dot.bad {{
             background: var(--bad);
             box-shadow: 0 0 0 8px rgba(185, 28, 28, 0.12);
+        }}
+
+        .dot.warn {{
+            background: var(--warn);
+            box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.12);
         }}
 
         @keyframes pulse {{
@@ -1709,7 +1719,7 @@ class OrchestrationPlugin:
 
         .kv-row {{ margin-bottom: 8px; }}
         .kv-row code {{
-            background: #f1f5f9;
+            background: #0d1f35;
             border: 1px solid var(--line);
             border-radius: 6px;
             padding: 2px 6px;
@@ -1723,7 +1733,7 @@ class OrchestrationPlugin:
         .reveal-toggle {{
             width: 100%;
             border: 0;
-            background: linear-gradient(135deg, #f8fafc, #eef2ff);
+            background: linear-gradient(135deg, #14243a, #1c2d45);
             color: var(--text);
             font-weight: 700;
             text-align: left;
@@ -1735,7 +1745,7 @@ class OrchestrationPlugin:
         }}
 
         .reveal-card.hint .reveal-toggle {{
-            background: linear-gradient(135deg, #fff7ed, #fffbeb);
+            background: linear-gradient(135deg, #2a1f10, #302515);
         }}
 
         .reveal-cta {{
@@ -1864,10 +1874,18 @@ class OrchestrationPlugin:
             border-color: var(--line);
         }}
 
+        .btn-row {{
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }}
+
         .tiny {{
-            margin-top: 12px;
-            color: var(--muted);
-            font-size: 0.88rem;
+            margin-top: 16px;
+            color: #5a6a82;
+            font-size: 0.8rem;
+            text-align: center;
         }}
 
         @media (max-width: 740px) {{
@@ -1895,7 +1913,7 @@ class OrchestrationPlugin:
                 </div>
                 <div class=\"pill\">
                     <div class=\"k\">TTL Remaining</div>
-                    <div class=\"v\" id=\"ttlValue\">{status_ttl_remaining} seconds</div>
+                    <div class=\"v\" id=\"ttlValue\">{ttl_formatted}</div>
                 </div>
             </div>
 
@@ -1907,9 +1925,9 @@ class OrchestrationPlugin:
 
             {''.join(method_blocks)}
 
-            {relaunch_block}<a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a>
+            <div class=\"btn-row\">{relaunch_block}<a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a></div>
 
-            <p class=\"tiny\" id=\"autoLine\">Auto-redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
+            <p class=\"tiny\" id=\"autoLine\">Redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
         </div>
     </section>
 
@@ -2004,9 +2022,12 @@ class OrchestrationPlugin:
                 }}
 
                 const running = Boolean(data.running);
-                statusDot.className = 'dot ' + (running ? 'ok' : 'bad');
-                statusTitle.textContent = running ? 'Instance launched' : 'Instance down';
-                ttlValue.textContent = `${{Math.max(0, Number(data.ttl_remaining_sec || 0))}} seconds`;
+                statusDot.className = 'dot ' + (running ? 'ok' : 'warn');
+                statusTitle.textContent = running ? 'Instance launched' : 'Not started';
+                const remSec = Math.max(0, Number(data.ttl_remaining_sec || 0));
+                const remM = Math.floor(remSec / 60);
+                const remS = remSec % 60;
+                ttlValue.textContent = remSec > 0 ? `${{remM}}m ${{String(remS).padStart(2, '0')}}s` : '—';
                 if (running) {{
                     launchDescription.textContent = originalLaunchDescription;
                 }} else {{
