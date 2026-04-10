@@ -6,6 +6,21 @@ Ansible Vault secures production secrets (database passwords, API signing keys, 
 
 ---
 
+## Secrets Reference
+
+| Secret | Used by | Purpose |
+|--------|---------|---------|
+| `DB_ROOT_PASSWORD` | MariaDB | Compte root — administration de la base (création users, backups) |
+| `DB_PASSWORD` | MariaDB + CTFd | Compte `ctfd` — connexion runtime de l'application à la base |
+| `orchestrator_api_token` | Orchestrateur | Header `X-Orchestrator-Token` — authentifie chaque appel API |
+| `orchestrator_signing_secret` | Orchestrateur | Clé HMAC-SHA256 pour signer les requêtes POST (anti-replay) |
+| `orchestrator_ctfd_webhook_token` | CTFd → Orchestrateur | Authentifie les webhooks envoyés par CTFd vers l'orchestrateur |
+| `grafana_admin_password` | Grafana | Mot de passe du compte `admin` Grafana |
+
+> **Important :** `DB_PASSWORD` doit être identique dans le vault ET dans MariaDB. Si vous changez ce secret après la première initialisation, vous devez supprimer `/opt/ctf/ctfd/db_data/` sur la VM et re-provisionner pour que MariaDB soit réinitialisée avec le nouveau mot de passe.
+
+---
+
 ## File Structure
 
 ```
