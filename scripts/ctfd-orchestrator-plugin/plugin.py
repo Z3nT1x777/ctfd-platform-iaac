@@ -190,7 +190,7 @@ button{cursor:pointer;font-family:inherit;font-size:inherit;}
   </div>
   <div class="nav-section">
     <div class="nav-label">Team</div>
-    <a class="nav-item" href="/teams/me">
+    <a class="nav-item" href="/team">
       <span class="nav-icon">◯</span>
       {{ team_name }}
       <span class="nav-badge" id="sidebar-members">{{ member_count }}</span>
@@ -216,8 +216,8 @@ button{cursor:pointer;font-family:inherit;font-size:inherit;}
       <div class="page-sub">Team {{ team_name }} · Manage your running challenge instances</div>
     </div>
     <div class="header-actions">
-      <a href="/challenges" class="btn">← Challenges</a>
-      <button class="btn btn-blue" onclick="refreshAll()">↺ Refresh</button>
+      <a href="/challenges" class="btn">Challenges</a>
+      <button class="btn btn-blue" onclick="window._dashRefresh && window._dashRefresh()">Refresh</button>
     </div>
   </div>
 
@@ -469,10 +469,11 @@ function refreshAll() {
   return Promise.all([refreshInstances(), refreshLeaderboard(), refreshQuickLaunch()]);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  refreshAll();
-  setInterval(refreshAll, 30000);
-});
+// Expose for inline onclick and start immediately (scripts at end of body,
+// DOM is ready — no need to wait for DOMContentLoaded)
+window._dashRefresh = refreshAll;
+refreshAll();
+setInterval(refreshAll, 30000);
 })();
 </script>{% endraw %}
 </body>
@@ -2038,7 +2039,7 @@ class OrchestrationPlugin:
 
             {''.join(method_blocks)}
 
-            <div class=\"btn-row\"><a class=\"btn btn-secondary\" href=\"/challenges\">← Back to Challenges</a></div>
+            <div class=\"btn-row\"><a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a></div>
 
             <p class=\"tiny\" id=\"autoLine\">Redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
         </div>
@@ -2176,8 +2177,38 @@ class OrchestrationPlugin:
             }}, 1000);
         }}
 
+        // Local 1-second countdown between server polls
+        let _localTtl = {status_ttl_remaining};
+        setInterval(function() {{
+            if (_localTtl > 0) {{
+                _localTtl -= 1;
+                const m = Math.floor(_localTtl / 60);
+                const s = _localTtl % 60;
+                if (ttlValue) ttlValue.textContent = _localTtl > 0 ? m + 'm ' + (s < 10 ? '0' : '') + s + 's' : '—';
+                const bar = document.getElementById('ttlBar');
+                if (bar) bar.style.width = Math.min(100, Math.round(_localTtl / 36)) + '%';
+            }}
+        }}, 1000);
+
+        // Server poll every 30s to resync (updates _localTtl)
+        async function refreshInstanceStateAndSync() {{
+            try {{
+                const res = await fetch(statusEndpoint);
+                const data = await res.json();
+                if (!data.ok) return;
+                const running = Boolean(data.running);
+                statusDot.className = 'dot ' + (running ? 'ok' : 'warn');
+                statusTitle.textContent = running ? 'Instance launched' : 'Not started';
+                _localTtl = Math.max(0, Number(data.ttl_remaining_sec || 0));
+                if (running) {{
+                    launchDescription.textContent = originalLaunchDescription;
+                }} else {{
+                    launchDescription.textContent = 'Instance not running. Navigate back to the challenge to relaunch it.';
+                }}
+            }} catch (err) {{}}
+        }}
         refreshInstanceState();
-        setInterval(refreshInstanceState, 10000);
+        setInterval(refreshInstanceStateAndSync, 30000);
     </script>
 </body>
 </html>
