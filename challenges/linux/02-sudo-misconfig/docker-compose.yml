@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  sudo-misconfig:
+    build: .
+    container_name: ctf-sudo-misconfig
+    ports:
+      - "5021:22"
+    restart: unless-stopped

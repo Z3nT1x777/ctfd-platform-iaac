@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  cron-wildcard:
+    build: .
+    container_name: ctf-cron-wildcard
+    ports:
+      - "5022:22"
+    restart: unless-stopped

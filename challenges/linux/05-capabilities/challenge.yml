@@ -1,0 +1,22 @@
+name: capabilities
+category: linux
+value: 400
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Ce serveur ne présente aucun binaire SUID évident. Pourtant, une élévation de privilèges est possible.
+  Les Linux capabilities permettent d'accorder des privilèges granulaires à des processus sans SUID.
+  Trouve quel binaire dispose d'une capability dangereuse et exploite-la.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Il n'y a pas de SUID évident ici. Les Linux capabilities sont une autre forme de privilèges étendus.
+hint2: |
+  Utilise getcap -r / 2>/dev/null pour trouver les binaires avec des capabilities.
+hint3: |
+  cap_setuid permet de changer d'UID. python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'
+flag: CTF{linux_capabilities_cap_setuid}
+port: 5024

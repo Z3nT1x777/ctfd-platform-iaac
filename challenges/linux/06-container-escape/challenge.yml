@@ -1,0 +1,25 @@
+name: container-escape
+category: linux
+value: 500
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Tu es dans un container Docker. Le flag n'est pas dans ce container.
+  Inspecte ton environnement, trouve comment interagir avec le host et récupère le flag sur la machine hôte.
+  Tout ce dont tu as besoin est déjà dans le container.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Qu'est-ce qui est monté dans /var/run/ ?
+hint2: |
+  Le socket Docker permet de contrôler le démon Docker du host. Tu peux lancer de nouveaux containers.
+hint3: |
+  docker run -v /:/hostfs alpine ... monte le filesystem du host dans un nouveau container.
+flag: CTF{docker_socket_escape_to_host}
+port: 5025
+setup_note: |
+  IMPORTANT: Create the flag on the Vagrant VM host before starting this challenge:
+  sudo mkdir -p /opt/ctf-flags && echo 'CTF{docker_socket_escape_to_host}' | sudo tee /opt/ctf-flags/container-escape.txt && sudo chmod 644 /opt/ctf-flags/container-escape.txt

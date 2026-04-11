@@ -1,0 +1,22 @@
+name: path-hijack
+category: linux
+value: 300
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Un binaire SUID custom a été déployé sur ce serveur par un développeur inexpérimenté.
+  Le binaire appelle une commande externe sans spécifier son chemin absolu.
+  Contrôle l'environnement d'exécution pour rediriger l'appel vers ton propre script.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Un binaire SUID custom tourne sur ce système. Inspecte-le avec strings.
+hint2: |
+  Le binaire appelle une commande externe sans chemin absolu. Que se passe-t-il si tu contrôles le PATH ?
+hint3: |
+  Crée /tmp/sysinfo avec le contenu voulu, puis mets /tmp en tête du PATH avant de relancer /usr/local/bin/syscheck.
+flag: CTF{path_hijack_suid_custom_binary}
+port: 5023

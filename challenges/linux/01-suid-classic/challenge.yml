@@ -1,0 +1,22 @@
+name: suid-classic
+category: linux
+value: 100
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Un serveur Linux expose un binaire standard avec des droits inhabituels.
+  Explore le système, trouve le fichier avec des permissions spéciales et escalade tes privilèges jusqu'à root.
+  Le flag se trouve dans /root/flag.txt.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Les fichiers avec des droits spéciaux peuvent s'exécuter avec les privilèges de leur propriétaire...
+hint2: |
+  Cherche les binaires avec le bit SUID : find / -perm -4000 -type f 2>/dev/null
+hint3: |
+  GTFOBins est ton ami. Cherche 'find' dans la section SUID.
+flag: CTF{suid_find_gtfobins_ez}
+port: 5020

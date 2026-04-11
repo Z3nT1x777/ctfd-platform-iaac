@@ -1,0 +1,22 @@
+name: cron-wildcard
+category: linux
+value: 250
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Un job cron tourne en arrière-plan sur ce serveur et effectue des sauvegardes régulières.
+  Le script utilise un wildcard dans un répertoire accessible en écriture — une combinaison dangereuse.
+  Exploite cette configuration pour exécuter du code arbitraire en tant que root.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Est-ce qu'une tâche planifiée tourne avec des droits élevés ?
+hint2: |
+  Regarde /etc/cron.d/. La commande tar est appelée avec un wildcard sur un dossier accessible en écriture.
+hint3: |
+  Tar accepte des arguments via des noms de fichiers : --checkpoint=1 et --checkpoint-action=exec=cmd. Crée ces fichiers dans /tmp/uploads.
+flag: CTF{tar_wildcard_cron_injection}
+port: 5022

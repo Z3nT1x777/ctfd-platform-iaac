@@ -1,0 +1,22 @@
+name: sudo-misconfig
+category: linux
+value: 150
+type: docker
+connection_mode: ssh
+ssh_user: player
+ssh_password: player2026
+container_port: 22
+description: |
+  Un administrateur distrait a configuré sudo de manière trop permissive sur ce serveur.
+  Identifie quelle commande tu peux exécuter en tant que root et utilise-la pour t'échapper vers un shell privilégié.
+  Le flag se trouve dans /root/flag.txt.
+access_instructions: |
+  Connect via SSH then escalate privileges to read /root/flag.txt.
+hint1: |
+  Quels droits sudo a l'utilisateur player ?
+hint2: |
+  sudo -l liste les commandes autorisées. L'une d'elles est un éditeur de texte.
+hint3: |
+  Dans vim, la commande :!/bin/bash lance un shell avec les droits sudo.
+flag: CTF{sudo_vim_shell_escape}
+port: 5021
