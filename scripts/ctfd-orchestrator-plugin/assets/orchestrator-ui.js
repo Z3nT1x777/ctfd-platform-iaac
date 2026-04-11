@@ -270,7 +270,6 @@
           container.innerHTML = "<div style=\"padding:11px 13px;color:var(--muted);font-size:13px\">No challenges available</div>";
           return;
         }
-
         var running = [];
         var offline = [];
         for (var j = 0; j < challenges.length; j++) {
@@ -290,24 +289,15 @@
         }
 
         var html = "";
+        for (var r = 0; r < running.length; r++) { html += qlRow(running[r], true); }
 
-        /* Running instances — always visible */
-        for (var r = 0; r < running.length; r++) {
-          html += qlRow(running[r], true);
-        }
-
-        /* Offline challenges — collapsed by default, expand on click */
         if (offline.length) {
           var offlineRows = "";
-          for (var o = 0; o < offline.length; o++) {
-            offlineRows += qlRow(offline[o], false);
-          }
+          for (var o = 0; o < offline.length; o++) { offlineRows += qlRow(offline[o], false); }
           html += "<details class=\"ql-dropdown\">" +
-            "<summary class=\"ql-dropdown-toggle\">" +
-              "All challenges <span class=\"ql-count\">" + offline.length + "</span>" +
-            "</summary>" +
-            "<div class=\"ql-dropdown-body\">" + offlineRows + "</div>" +
-            "</details>";
+            "<summary class=\"ql-dropdown-toggle\">All challenges " +
+            "<span class=\"ql-count\">" + offline.length + "</span></summary>" +
+            "<div class=\"ql-dropdown-body\">" + offlineRows + "</div></details>";
         }
 
         container.innerHTML = html;
