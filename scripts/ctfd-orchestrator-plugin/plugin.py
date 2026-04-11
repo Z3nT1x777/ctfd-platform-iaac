@@ -1297,7 +1297,16 @@ class OrchestrationPlugin:
     </div>
     <div class=\"cred-body\">
         <div class=\"kv-row\"><span class=\"kv-label\">Username</span><code>{user_html}</code></div>
-        <div class=\"kv-row\"><span class=\"kv-label\">Password</span><code>{pass_html}</code></div>
+        <div class=\"kv-row\">
+            <span class=\"kv-label\">Password</span>
+            <div class=\"gh-cmd-wrap\" style=\"margin:4px 0 0\">
+                <button class=\"gh-copy-btn\" data-copy=\"{pass_html}\" aria-label=\"Copy password\" title=\"Copy\">
+                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z\"/><path d=\"M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z\"/></svg>
+                    <span class=\"gh-copy-label\"></span>
+                </button>
+                <code class=\"gh-cmd\">{pass_html}</code>
+            </div>
+        </div>
     </div>
 </div>
 """
@@ -1438,6 +1447,9 @@ class OrchestrationPlugin:
                 radial-gradient(860px 540px at 100% -15%, rgba(16,185,129,0.12), transparent 62%),
                 var(--bg);
             font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             color: var(--text);
             padding: 24px;
         }}
@@ -1571,6 +1583,7 @@ class OrchestrationPlugin:
             border: 1px solid var(--line);
             border-radius: 6px;
             padding: 2px 6px;
+            font-weight: 600;
         }}
 
         .reveal-card {{
@@ -1742,7 +1755,7 @@ class OrchestrationPlugin:
             background: #0d1117;
             border: 1px solid #30363d;
             border-radius: 8px;
-            padding: 14px 52px 14px 16px;
+            padding: 14px 80px 14px 16px;
             margin: 6px 0 0;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             font-size: 0.93rem;
@@ -1751,15 +1764,15 @@ class OrchestrationPlugin:
             word-break: break-all;
         }}
 
-        .gh-cmd {{ color: #e6edf7; }}
+        .gh-cmd {{ color: #e6edf7; font-weight: 500; }}
 
-        /* syntax tokens */
-        .sh-kw   {{ color: #79c0ff; font-weight: 700; }}
-        .sh-flag {{ color: #7ee787; }}
-        .sh-val  {{ color: #f2cc60; }}
-        .sh-user {{ color: #ffa657; }}
+        /* syntax tokens — user@host in blue, everything else muted */
+        .sh-kw   {{ color: #8b949e; }}
+        .sh-flag {{ color: #8b949e; }}
+        .sh-val  {{ color: #8b949e; }}
+        .sh-user {{ color: #6cb6ff; }}
         .sh-at   {{ color: #9aa8bc; }}
-        .sh-host {{ color: #ffa657; }}
+        .sh-host {{ color: #6cb6ff; }}
 
         .gh-copy-btn {{
             position: absolute;
