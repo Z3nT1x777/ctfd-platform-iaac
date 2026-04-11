@@ -10,14 +10,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CHALLENGES_ROOT = REPO_ROOT / "challenges"
 
 REQUIRED_KEYS = ["name", "category", "value", "type", "description", "flag"]
-DOCKER_REQUIRED_FILES = [
+
+# Files required for all docker challenges
+DOCKER_REQUIRED_FILES_BASE = [
     "Dockerfile",
-    "app.py",
-    "flag.txt",
-    "requirements.txt",
     "docker-compose.yml",
     "challenge.yml",
 ]
+
+# Extra files required only for web/app-based challenges (not SSH)
+DOCKER_REQUIRED_FILES_WEB = [
+    "app.py",
+    "flag.txt",
+    "requirements.txt",
+]
+
 PORT_MIN = 5001
 PORT_MAX = 5999
 DEFAULT_CONTAINER_PORT = 5000
@@ -73,9 +80,17 @@ def validate_challenge(path: Path, used_ports: Dict[int, Path]) -> List[str]:
 
     challenge_type = data.get("type", "")
     if challenge_type == "docker":
-        for filename in DOCKER_REQUIRED_FILES:
+        # Base files required for all docker challenges
+        for filename in DOCKER_REQUIRED_FILES_BASE:
             if not (path / filename).exists():
                 errors.append(f"{rel}: missing required file '{filename}' for docker challenge")
+
+        # Web-specific files only required when connection_mode is not ssh
+        connection_mode = data.get("connection_mode", "").strip().lower()
+        if connection_mode not in ("ssh", "ssh_only"):
+            for filename in DOCKER_REQUIRED_FILES_WEB:
+                if not (path / filename).exists():
+                    errors.append(f"{rel}: missing required file '{filename}' for web docker challenge")
 
         port_str = data.get("port", "")
         if not port_str or not port_str.isdigit():
