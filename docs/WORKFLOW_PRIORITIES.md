@@ -19,7 +19,10 @@ This document outlines the core project objectives, organized by priority level 
 vagrant up --provision
 vagrant status  # Should show "running"
 
-# Check services
+# Check services — formatted table (Names + Status at a glance)
+vagrant ssh -c "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+
+# Full output with ports
 vagrant ssh -c "docker ps"
 vagrant ssh -c "curl -I http://localhost:80"
 vagrant ssh -c "sudo systemctl status ctf-orchestrator-api.service"

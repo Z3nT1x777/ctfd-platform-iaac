@@ -19,7 +19,8 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 from flask import Blueprint, request, jsonify, render_template_string, redirect
-from CTFd.models import Challenges, Teams, db
+from CTFd.models import Challenges, Teams, Solves, db
+from datetime import datetime
 from CTFd.utils.decorators import authed_only, require_team
 from CTFd.utils.user import get_current_user
 
@@ -29,500 +30,258 @@ from .access_profiles import build_access_methods, load_access_hint_from_dir, no
 
 logger = logging.getLogger("ctfd.orchestrator_plugin")
 
-UI_TEMPLATE = """
-<!doctype html>
-<html lang=\"en\">
+UI_TEMPLATE = """<!doctype html>
+<html lang="en">
 <head>
-    <meta charset=\"utf-8\" />
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-    <title>Team Instances Dashboard</title>
-    <style>{% raw %}
-        :root {
-            --ink: #e6edf7;
-            --muted: #9aa8bc;
-            --line: #2a3548;
-            --panel: rgba(15, 23, 35, 0.9);
-            --panel-strong: #111a29;
-            --ok-fg: #54d299;
-            --ok-bg: rgba(34, 197, 94, 0.16);
-            --down-fg: #ff8b8b;
-            --down-bg: rgba(239, 68, 68, 0.16);
-            --open: #129c52;
-            --extend: #2368e8;
-            --kill: #dc2626;
-        }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Instances — {{ team_name }}</title>
+<style>{% raw %}
+:root {
+  --bg:       #0d1117;
+  --side:     #13181f;
+  --panel:    #161b22;
+  --border:   #2d333b;
+  --text:     #cdd9e5;
+  --muted:    #768390;
+  --ok:       #46954a;
+  --ok-glow:  rgba(70,149,74,.18);
+  --ok-text:  #57ab5a;
+  --warn:     #c69026;
+  --warn-glow:rgba(198,144,38,.18);
+  --warn-text:#daaa3f;
+  --bad:      #e5534b;
+  --bad-glow: rgba(229,83,75,.18);
+  --bad-text: #f47067;
+  --blue:     #316dca;
+  --blue-glow:rgba(49,109,202,.18);
+  --blue-text:#6cb6ff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;display:flex;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{cursor:pointer;font-family:inherit;font-size:inherit;}
 
-        * { box-sizing: border-box; }
+/* SIDEBAR */
+.sidebar{width:236px;min-width:236px;background:var(--side);border-right:1px solid var(--border);padding:14px 0;overflow-y:auto;flex-shrink:0;}
+.nav-section{margin-bottom:18px;}
+.nav-label{padding:4px 16px 5px;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:6px;margin:1px 8px;color:var(--muted);font-size:13px;transition:background .12s,color .12s;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.nav-item.active{background:rgba(255,255,255,.08);color:var(--text);}
+.nav-icon{font-size:14px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;min-width:20px;text-align:center;}
+.nav-badge.zero{background:var(--border);color:var(--muted);}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            color: var(--ink);
-            font-family: "Plus Jakarta Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-            background:
-                radial-gradient(900px 560px at 8% -16%, rgba(59, 130, 246, 0.2), transparent 60%),
-                radial-gradient(900px 560px at 100% -18%, rgba(16, 185, 129, 0.12), transparent 62%),
-                linear-gradient(160deg, #060b14, #0a1320 55%, #0d1524);
-        }
+/* MAIN */
+.main{flex:1;min-width:0;padding:20px 22px 40px;overflow-y:auto;}
 
-        .wrap {
-            width: min(1220px, calc(100vw - 34px));
-            margin: 0 auto;
-            padding: 28px 0 40px;
-        }
+/* PAGE HEADER */
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;}
+.page-header h1{font-size:1.35rem;font-weight:700;letter-spacing:-.015em;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.header-actions{display:flex;gap:8px;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--panel);color:var(--text);transition:background .12s,border-color .12s;cursor:pointer;}
+.btn:hover{background:rgba(255,255,255,.06);border-color:var(--muted);}
+.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn-blue:hover{opacity:.88;}
 
-        .hero {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 18px;
-            margin-bottom: 20px;
-            padding: 20px 22px;
-            border-radius: 20px;
-            border: 1px solid var(--line);
-            background: var(--panel);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 14px 36px rgba(2, 6, 23, 0.42);
-        }
+/* FLASH */
+.flash{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;border:1px solid;display:none;}
+.flash.show{display:block;}
+.flash-ok{background:var(--ok-glow);border-color:var(--ok);color:var(--ok-text);}
+.flash-err{background:var(--bad-glow);border-color:var(--bad);color:var(--bad-text);}
 
-        .hero h1 {
-            margin: 0 0 6px;
-            font-size: 2rem;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-        }
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:13px 15px;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.stat-val{font-size:1.55rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;}
+.stat-val.green{color:var(--ok-text);}
+.stat-val.amber{color:var(--warn-text);}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:4px;}
+.stat-dot{width:7px;height:7px;border-radius:50%;background:var(--ok-text);display:inline-block;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
-        .sub {
-            margin: 0;
-            max-width: 70ch;
-            color: var(--muted);
-            line-height: 1.5;
-        }
+/* BODY GRID */
+.body-grid{display:grid;grid-template-columns:1fr 272px;gap:14px;align-items:start;}
 
-        .flash {
-            display: none;
-            margin-top: 13px;
-            padding: 11px 13px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: var(--panel-strong);
-            font-weight: 600;
-        }
+/* INSTANCES */
+.panel-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.panel-title .quota{font-weight:400;font-size:12px;color:var(--muted);}
+.inst-grid{display:flex;flex-direction:column;gap:10px;}
+.inst-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .14s;}
+.inst-card:hover{border-color:var(--muted);}
+.inst-head{display:flex;align-items:center;gap:10px;padding:11px 13px 10px;}
+.inst-icon{width:34px;height:34px;background:var(--blue-glow);border:1px solid var(--border);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0;}
+.inst-name{font-weight:600;font-size:14px;}
+.inst-meta{font-size:12px;color:var(--muted);}
+.inst-badge{margin-left:auto;display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid;flex-shrink:0;}
+.badge-up{color:var(--ok-text);border-color:var(--ok);background:var(--ok-glow);}
+.badge-down{color:var(--bad-text);border-color:var(--bad);background:var(--bad-glow);}
+.badge-dot{width:7px;height:7px;border-radius:50%;}
+.dot-up{background:var(--ok-text);}
+.dot-down{background:var(--bad-text);}
 
-        .flash.ok,
-        .flash.err {
-            display: block;
-        }
+/* INST BODY — 4 columns: Connection | TTL | User | Actions */
+.inst-body{display:grid;grid-template-columns:2fr 1.5fr .8fr auto;border-top:1px solid var(--border);}
+.inst-col{padding:9px 13px;border-right:1px solid var(--border);}
+.inst-col:last-child{border-right:none;}
+.col-lbl{font-size:11px;color:var(--muted);margin-bottom:2px;}
+.col-val{font-size:13px;font-weight:600;}
+.col-conn{color:var(--blue-text);font-family:"SFMono-Regular","Consolas","Liberation Mono",monospace;font-size:12px;}
+.ttl-num{font-size:14px;font-weight:700;}
+.ttl-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;}
+.ttl-bar{height:100%;border-radius:2px;transition:width 1s linear;}
+.b-green{background:var(--ok-text);}
+.b-amber{background:var(--warn-text);}
+.b-red  {background:var(--bad-text);}
+.user-val{color:var(--blue-text);font-size:13px;font-weight:600;}
+.inst-actions{display:flex;flex-direction:column;gap:4px;padding:7px 10px;justify-content:center;}
+.act-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 11px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;transition:opacity .12s;white-space:nowrap;text-decoration:none;}
+.act-btn:hover{opacity:.78;}
+.btn-extend{background:var(--blue-glow);border-color:var(--blue);color:var(--blue-text);}
+.btn-ssh{background:var(--ok-glow);border-color:var(--ok);color:var(--ok-text);}
+.btn-kill{background:var(--bad-glow);border-color:var(--bad);color:var(--bad-text);}
 
-        .flash.ok {
-            border-color: rgba(34, 197, 94, 0.36);
-            background: rgba(34, 197, 94, 0.14);
-            color: #86efac;
-        }
+/* EMPTY */
+.empty-box{border:1px dashed var(--border);border-radius:10px;padding:28px;text-align:center;color:var(--muted);font-size:13px;}
+.empty-box a{color:var(--blue-text);}
 
-        .flash.err {
-            border-color: rgba(239, 68, 68, 0.36);
-            background: rgba(239, 68, 68, 0.14);
-            color: #fca5a5;
-        }
+/* RIGHT COLUMN */
+.right-col{display:flex;flex-direction:column;gap:12px;}
+.side-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.side-head{padding:9px 13px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.side-head span{font-weight:400;text-transform:none;font-size:11px;}
+.act-table{width:100%;border-collapse:collapse;}
+.act-table th{padding:7px 11px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);}
+.act-table td{padding:7px 11px;font-size:13px;}
+.act-table tr:not(:last-child) td{border-bottom:1px solid var(--border);}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--ok);background:var(--ok-glow);color:var(--ok-text);}
+.s-dot{width:6px;height:6px;border-radius:50%;background:var(--ok-text);}
+.ql-item{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.ql-item:last-child{border-bottom:none;}
+.ql-item:hover{background:rgba(255,255,255,.04);}
+.ql-item.running{border-left:3px solid var(--ok);background:var(--ok-glow);}
+.ql-item.running .ql-name{color:var(--ok-text);}
+.ql-right{display:flex;align-items:center;gap:6px;}
+.ql-pts{font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--muted);}
+.ql-item.running .ql-pts{background:var(--ok-glow);color:var(--ok-text);}
+.ql-run-lbl{font-size:11px;font-weight:600;color:var(--ok-text);}
 
-        .top-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-start;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            border-radius: 12px;
-            padding: 10px 15px;
-            border: 1px solid transparent;
-            font-weight: 700;
-            transition: transform 0.14s ease, box-shadow 0.14s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn.refresh {
-            background: #2368e8;
-            border-color: #2368e8;
-            color: #fff;
-        }
-
-        .btn:not(.refresh) {
-            background: var(--panel-strong);
-            border-color: var(--line);
-            color: var(--ink);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-            gap: 18px;
-        }
-
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 18px;
-            box-shadow: 0 12px 28px rgba(2, 6, 23, 0.36);
-        }
-
-        .panel h2 {
-            margin: 0 0 14px;
-            font-size: 1.48rem;
-            letter-spacing: -0.01em;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .inst {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-height: 222px;
-            padding: 16px;
-            border-radius: 18px;
-            border: 1px solid var(--line);
-            background: var(--panel-strong);
-            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.28);
-        }
-
-        .inst-head {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .name {
-            margin: 0;
-            font-size: 1.22rem;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-            word-break: break-word;
-        }
-
-        .state {
-            white-space: nowrap;
-            padding: 7px 12px;
-            border-radius: 999px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--ok-fg);
-            background: var(--ok-bg);
-        }
-
-        .state.down {
-            color: var(--down-fg);
-            background: var(--down-bg);
-        }
-
-        .ttlbox {
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            padding: 12px;
-            background: #0c1625;
-        }
-
-        .k {
-            color: var(--muted);
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.11em;
-        }
-
-        .v {
-            margin-top: 4px;
-            font-size: 1.85rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            word-break: break-word;
-        }
-
-        .actions {
-            margin-top: auto;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
-        }
-
-        .action {
-            min-height: 40px;
-            border: 0;
-            border-radius: 12px;
-            padding: 10px 13px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            text-decoration: none;
-            font-weight: 700;
-            line-height: 1;
-            color: #fff;
-        }
-
-        .action.open {
-            grid-column: 1 / -1;
-            background: var(--open);
-        }
-
-        .action.extend {
-            background: var(--extend);
-        }
-
-        .action.kill {
-            background: var(--kill);
-        }
-
-        .leader {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            overflow: hidden;
-            background: #0f1827;
-        }
-
-        .leader th,
-        .leader td {
-            padding: 12px;
-            border-bottom: 1px solid var(--line);
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .leader th {
-            color: var(--muted);
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .leader tr:last-child td {
-            border-bottom: 0;
-        }
-
-        .empty-state {
-            border: 1px dashed var(--line);
-            border-radius: 14px;
-            padding: 16px;
-            text-align: center;
-            color: var(--muted);
-            background: #0d1624;
-        }
-
-        @media (max-width: 980px) {
-            .hero {
-                grid-template-columns: 1fr;
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .cards {
-                grid-template-columns: 1fr;
-            }
-        }
-    {% endraw %}</style>
+@media(max-width:960px){.body-grid{grid-template-columns:1fr;}.stats-row{grid-template-columns:repeat(2,1fr);}.inst-body{grid-template-columns:1fr 1fr;}}
+@media(max-width:640px){.sidebar{display:none;}.stats-row{grid-template-columns:1fr 1fr;}}
+{% endraw %}</style>
+<script>var _CFG = { max_active: {{ max_active }}, team_name: {{ team_name | tojson }} };</script>
+<script src="/plugins/ctfd_orchestrator_plugin/assets/orchestrator-ui.js"></script>
 </head>
 <body>
-    <div class=\"wrap\">
-        <div class=\"hero\">
-            <div>
-                <h1>Instance Control Center</h1>
-                <p class="sub">Team: {{ team_name|e }}. Fast controls, clear status, and clean operations.</p>
 
-                <div id="actionMessage" class="flash{% if initial_message %} {{ initial_kind }}{% endif %}">{{ initial_message|e }}</div>
-            </div>
-            <div class=\"top-actions\">
-                <a class=\"btn\" href=\"/challenges\">Back to Challenges</a>
-                <a class=\"btn refresh\" href=\"javascript:void(0)\" onclick=\"refreshAll()\">Refresh</a>
-            </div>
-        </div>
+<aside class="sidebar">
+  <div class="nav-section">
+    <div class="nav-label">Instance Control</div>
+    <a class="nav-item active" href="/plugins/orchestrator/dashboard">
+      <span class="nav-icon">◉</span>
+      Active instances
+      <span class="nav-badge zero" id="sidebar-count">0</span>
+    </a>
+    <a class="nav-item" href="/challenges">
+      <span class="nav-icon">⊞</span>
+      All challenges
+    </a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Team</div>
+    <a class="nav-item" href="/team">
+      <span class="nav-icon">◯</span>
+      {{ team_name }}
+      <span class="nav-badge" id="sidebar-members">{{ member_count }}</span>
+    </a>
+    <a class="nav-item" href="/scoreboard">
+      <span class="nav-icon">↺</span>
+      Scoreboard
+    </a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">System</div>
+    <a class="nav-item" href="/settings">
+      <span class="nav-icon">⚙</span>
+      Settings
+    </a>
+  </div>
+</aside>
 
-        <div class=\"grid\">
-            <section class=\"panel\">
-                <h2>Team Active Instances</h2>
-                <div id=\"instances\" class=\"cards\"></div>
-            </section>
-
-            <section class=\"panel\">
-                <h2>Live Activity</h2>
-                <table class=\"leader\">
-                    <thead><tr><th>Team</th><th>Active Instances</th></tr></thead>
-                    <tbody id=\"leaderboard\"></tbody>
-                </table>
-            </section>
-        </div>
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>Instance Control Center</h1>
+      <div class="page-sub">Team {{ team_name }} · Manage your running challenge instances</div>
     </div>
+    <div class="header-actions">
+      <a href="/challenges" class="btn">Challenges</a>
+      <button class="btn btn-blue" onclick="window._dashRefresh && window._dashRefresh()">Refresh</button>
+    </div>
+  </div>
 
-    <script>
-        const fmt = (sec) => {
-            if (sec <= 0) return 'expired';
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return `${m}m ${s}s`;
-        };
-        const actionMessage = document.getElementById('actionMessage');
+  {% if initial_message %}
+  <div class="flash flash-{{ initial_kind }} show">{{ initial_message }}</div>
+  {% endif %}
 
-        function showMessage(kind, text) {
-            actionMessage.className = `flash ${kind}`;
-            actionMessage.textContent = text;
-        }
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Running</div>
+      <div class="stat-val green" id="stat-running">—</div>
+      <div class="stat-sub"><span class="stat-dot"></span><span id="stat-running-sub">Active</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Min TTL left</div>
+      <div class="stat-val" id="stat-min-ttl">—</div>
+      <div class="stat-sub" id="stat-min-ttl-name">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Solved today</div>
+      <div class="stat-val">{{ solved_today }}</div>
+      <div class="stat-sub">of {{ docker_challenge_count }} challenges</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Team pts</div>
+      <div class="stat-val amber">{{ team_pts }}</div>
+      <div class="stat-sub">Rank #{{ team_rank }}</div>
+    </div>
+  </div>
 
-        function csrfHeaders() {
-            const nonce = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : '';
-            return nonce ? { 'CSRF-Token': nonce, 'X-CSRF-Token': nonce } : {};
-        }
+  <div class="body-grid">
+    <div>
+      <div class="panel-title">
+        Active Instances
+        <span class="quota" id="quota-label"></span>
+      </div>
+      <div class="inst-grid" id="instances-list">
+        <div class="empty-box">Loading instances…</div>
+      </div>
+    </div>
+    <div class="right-col">
+      <div class="side-panel">
+        <div class="side-head">Live Activity</div>
+        <table class="act-table">
+          <thead><tr><th>Team</th><th>Instances</th><th>Status</th></tr></thead>
+          <tbody id="live-activity-body">
+            <tr><td colspan="3" style="padding:10px 11px;color:var(--muted)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="side-panel">
+        <div class="side-head">Quick Launch <span>— Challenges disponibles</span></div>
+        <div id="quick-launch-list">
+          <div style="padding:12px 13px;color:var(--muted);font-size:13px">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
 
-        async function callInstanceAction(path, payload) {
-            try {
-                const res = await fetch(path, {
-                    method: 'POST',
-                    cache: 'no-store',
-                    headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
-                    body: JSON.stringify(payload)
-                });
-
-                const raw = await res.text();
-                let data = {};
-                try {
-                    data = raw ? JSON.parse(raw) : {};
-                } catch (_e) {
-                    data = {
-                        ok: false,
-                        error: `http_${res.status}`,
-                        detail: raw ? raw.slice(0, 240) : `HTTP ${res.status}`,
-                    };
-                }
-
-                if (!res.ok) {
-                    data.ok = false;
-                    if (!data.error) {
-                        data.error = `http_${res.status}`;
-                    }
-                    if (!data.detail) {
-                        data.detail = `HTTP ${res.status}`;
-                    }
-                }
-
-                return data;
-            } catch (err) {
-                return {
-                    ok: false,
-                    error: 'network_error',
-                    detail: String((err && err.message) || err || 'network_error'),
-                };
-            }
-        }
-
-        async function stopInstance(ref, name) {
-            return callInstanceAction('/plugins/orchestrator/stop', {
-                challenge_id: (String(ref || '').match(/^\d+$/) ? Number(ref) : undefined),
-                challenge_name: name || String(ref || ''),
-            });
-        }
-
-        async function extendInstance(ref, name) {
-            return callInstanceAction('/plugins/orchestrator/extend', {
-                challenge_id: (String(ref || '').match(/^\d+$/) ? Number(ref) : undefined),
-                challenge_name: name || String(ref || ''),
-                ttl_min: 30,
-            });
-        }
-
-        async function refreshInstances() {
-            const res = await fetch('/plugins/orchestrator/instances', { cache: 'no-store' });
-            const data = await res.json();
-            const body = document.getElementById('instances');
-            body.innerHTML = '';
-
-            if (!(data.instances || []).length) {
-                body.innerHTML = '<div class="empty-state">No active instances right now.</div>';
-                return;
-            }
-
-            (data.instances || []).forEach((inst) => {
-                const challengeRef = inst.challenge_ref || inst.challenge_name || String(inst.challenge_id || '');
-                const ttlSeconds = Number(inst.ttl_remaining_sec || 0);
-
-                const card = document.createElement('div');
-                card.className = 'inst';
-                card.innerHTML = `
-                    <div class=\"inst-head\">
-                        <h3 class=\"name\">${inst.challenge_name || '-'}</h3>
-                        <span class=\"state ${ttlSeconds > 0 ? '' : 'down'}\">${ttlSeconds > 0 ? 'UP' : 'DOWN'}</span>
-                    </div>
-                    <div class=\"ttlbox\"><div class=\"k\">TTL Remaining</div><div class=\"v\">${fmt(ttlSeconds)}</div></div>
-                    <div class=\"actions\">
-                        <a class=\"action open\" href=\"${inst.open_href || '#'}\" ${inst.open_href ? 'target=\"_blank\" rel=\"noopener\"' : ''}>${inst.open_label || 'Open Access'}</a>
-                        <a class=\"action extend\" href=\"/plugins/orchestrator/extend-ui?challenge_ref=${encodeURIComponent(challengeRef)}\">Add 30m</a>
-                        <a class=\"action kill\" href=\"/plugins/orchestrator/stop-ui?challenge_ref=${encodeURIComponent(challengeRef)}\">Kill Container</a>
-                    </div>
-                `;
-
-                body.appendChild(card);
-            });
-        }
-
-        async function refreshLeaderboard() {
-            const res = await fetch('/plugins/orchestrator/leaderboard/live', { cache: 'no-store' });
-            const data = await res.json();
-            const body = document.getElementById('leaderboard');
-            body.innerHTML = '';
-
-            if (!(data.rows || []).length) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = '<td colspan="2" style="color:var(--muted);">No active instances yet.</td>';
-                body.appendChild(tr);
-                return;
-            }
-
-            (data.rows || []).forEach((row) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.team_name || row.team_id}</td><td>${row.active_instances}</td>`;
-                body.appendChild(tr);
-            });
-        }
-
-        async function refreshAll() {
-            await refreshInstances();
-            await refreshLeaderboard();
-        }
-
-        refreshAll();
-        setInterval(refreshAll, 10000);
-
-        // Smooth countdown between server refreshes so TTL never looks frozen.
-        setInterval(() => {
-            document.querySelectorAll('#instances .inst .ttlbox .v').forEach((node) => {
-                const text = node.textContent || '';
-                const match = text.match(/^(\d+)m\s+(\d+)s$/);
-                if (!match) return;
-                let total = Number(match[1]) * 60 + Number(match[2]);
-                if (total <= 0) return;
-                total -= 1;
-                const m = Math.floor(total / 60);
-                const s = total % 60;
-                node.textContent = `${m}m ${s}s`;
-            });
-        }, 1000);
-    </script>
 </body>
-</html>
-"""
+</html>"""
 
 
 class OrchestrationPlugin:
@@ -968,6 +727,8 @@ class OrchestrationPlugin:
                     )
 
                 # Track instance in database
+                _u = get_current_user()
+                _uname = str(getattr(_u, "name", "") or getattr(_u, "email", "") or "")[:40]
                 instance_data = {
                     "team_id": str(team_id),
                     "challenge_id": challenge_id,
@@ -975,6 +736,7 @@ class OrchestrationPlugin:
                     "url": result.get("url"),
                     "port": result.get("port"),
                     "expire_epoch": result.get("expire_epoch"),
+                    "launched_by_username": _uname,
                 }
                 self.instance_tracker.add_instance(instance_data)
 
@@ -1263,11 +1025,21 @@ class OrchestrationPlugin:
                         if access_mode == "ssh" and not open_href:
                             open_href = f"/plugins/orchestrator/launch?challenge_id={int(challenge_obj.id)}"
 
+                    # Lookup launched_by from tracker
+                    launched_by = ""
+                    chid_int = int(challenge_obj.id) if challenge_obj else -1
+                    for tracked in self.instance_tracker.get_team_instances(str(team_id)):
+                        if int(tracked.get("challenge_id", -1)) == chid_int:
+                            launched_by = str(tracked.get("launched_by_username", "") or "")
+                            break
+
                     instances.append(
                         {
                             "team_id": str(team_id),
                             "challenge_id": challenge_obj.id if challenge_obj else 0,
                             "challenge_name": challenge_obj.name if challenge_obj else challenge_name,
+                            "challenge_value": getattr(challenge_obj, "value", 0) or 0,
+                            "challenge_category": str(getattr(challenge_obj, "category", "") or ""),
                             "challenge_ref": challenge_ref,
                             "port": port,
                             "url": instance_url,
@@ -1281,6 +1053,7 @@ class OrchestrationPlugin:
                             "state": state or "running",
                             "ttl_remaining_sec": ttl_remaining_sec,
                             "expired": ttl_remaining_sec <= 0,
+                            "launched_by_username": launched_by,
                         }
                     )
 
@@ -1319,7 +1092,12 @@ class OrchestrationPlugin:
                 {
                     "ok": True,
                     "challenges": [
-                        {"id": ch.id, "name": ch.name}
+                        {
+                            "id": ch.id,
+                            "name": ch.name,
+                            "value": getattr(ch, "value", 0) or 0,
+                            "category": str(getattr(ch, "category", "") or ""),
+                        }
                         for ch in orchestrated
                     ],
                 }
@@ -1418,6 +1196,8 @@ class OrchestrationPlugin:
                     msg += f"\n\nDetail: {detail}"
                 return msg, 500
 
+            _u2 = get_current_user()
+            _uname2 = str(getattr(_u2, "name", "") or getattr(_u2, "email", "") or "")[:40]
             instance_data = {
                 "team_id": str(team_id),
                 "challenge_id": challenge.id,
@@ -1425,8 +1205,9 @@ class OrchestrationPlugin:
                 "url": result.get("url"),
                 "port": result.get("port"),
                 "expire_epoch": result.get("expire_epoch"),
+                "launched_by_username": _uname2,
             }
-            
+
             # Some successful starts can return human-readable stdout only
             # (e.g. "Instance already running") without structured fields.
             url = str(result.get("url") or "").strip()
@@ -1568,7 +1349,7 @@ class OrchestrationPlugin:
     <div class=\"gh-cmd-wrap\">
         <button class=\"gh-copy-btn\" data-copy=\"{linux_esc}\" aria-label=\"Copy command\" title=\"Copy\">
             <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z\"/><path d=\"M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z\"/></svg>
-            <span class=\"gh-copy-label\">Copy</span>
+            <span class=\"gh-copy-label\"></span>
         </button>
         <code class=\"gh-cmd\">{linux_hl}</code>
     </div>
@@ -1585,7 +1366,7 @@ class OrchestrationPlugin:
         <div class=\"gh-cmd-wrap\">
             <button class=\"gh-copy-btn\" data-copy=\"{linux_esc}\" aria-label=\"Copy\" title=\"Copy\">
                 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z\"/><path d=\"M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z\"/></svg>
-                <span class=\"gh-copy-label\">Copy</span>
+                <span class=\"gh-copy-label\"></span>
             </button>
             <code class=\"gh-cmd\">{linux_hl}</code>
         </div>
@@ -1595,7 +1376,7 @@ class OrchestrationPlugin:
         <div class=\"gh-cmd-wrap\">
             <button class=\"gh-copy-btn\" data-copy=\"{windows_esc}\" aria-label=\"Copy\" title=\"Copy\">
                 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z\"/><path d=\"M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z\"/></svg>
-                <span class=\"gh-copy-label\">Copy</span>
+                <span class=\"gh-copy-label\"></span>
             </button>
             <code class=\"gh-cmd\">{windows_hl}</code>
         </div>
@@ -2062,7 +1843,7 @@ class OrchestrationPlugin:
 
             {''.join(method_blocks)}
 
-            <div class=\"btn-row\"><a class=\"btn btn-secondary\" href=\"/challenges\">← Back to Challenges</a></div>
+            <div class=\"btn-row\"><a class=\"btn btn-secondary\" href=\"/challenges\">Back to Challenges</a></div>
 
             <p class=\"tiny\" id=\"autoLine\">Redirecting in <span id=\"countdown\">60</span>s... <a href=\"#\" id=\"stayHere\" style=\"color:var(--btn-primary); margin-left:6px;\">stay here</a></p>
         </div>
@@ -2200,8 +1981,38 @@ class OrchestrationPlugin:
             }}, 1000);
         }}
 
+        // Local 1-second countdown between server polls
+        let _localTtl = {status_ttl_remaining};
+        setInterval(function() {{
+            if (_localTtl > 0) {{
+                _localTtl -= 1;
+                const m = Math.floor(_localTtl / 60);
+                const s = _localTtl % 60;
+                if (ttlValue) ttlValue.textContent = _localTtl > 0 ? m + 'm ' + (s < 10 ? '0' : '') + s + 's' : '—';
+                const bar = document.getElementById('ttlBar');
+                if (bar) bar.style.width = Math.min(100, Math.round(_localTtl / 36)) + '%';
+            }}
+        }}, 1000);
+
+        // Server poll every 30s to resync (updates _localTtl)
+        async function refreshInstanceStateAndSync() {{
+            try {{
+                const res = await fetch(statusEndpoint);
+                const data = await res.json();
+                if (!data.ok) return;
+                const running = Boolean(data.running);
+                statusDot.className = 'dot ' + (running ? 'ok' : 'warn');
+                statusTitle.textContent = running ? 'Instance launched' : 'Not started';
+                _localTtl = Math.max(0, Number(data.ttl_remaining_sec || 0));
+                if (running) {{
+                    launchDescription.textContent = originalLaunchDescription;
+                }} else {{
+                    launchDescription.textContent = 'Instance not running. Navigate back to the challenge to relaunch it.';
+                }}
+            }} catch (err) {{}}
+        }}
         refreshInstanceState();
-        setInterval(refreshInstanceState, 10000);
+        setInterval(refreshInstanceStateAndSync, 30000);
     </script>
 </body>
 </html>
@@ -2281,17 +2092,63 @@ class OrchestrationPlugin:
             initial_kind = str(request.args.get("kind", "ok") or "ok").strip().lower()
             if initial_kind not in {"ok", "err"}:
                 initial_kind = "ok"
+
+            team_id = self._resolve_team_id()
             try:
                 if getattr(user, "team", None) and getattr(user.team, "name", None):
                     team_name = str(user.team.name)
-                else:
-                    team_id = self._resolve_team_id()
-                    if team_id and str(team_id).isdigit():
-                        t = Teams.query.get(int(team_id))
-                        if t and getattr(t, "name", None):
-                            team_name = str(t.name)
+                elif team_id and str(team_id).isdigit():
+                    t = Teams.query.get(int(team_id))
+                    if t and getattr(t, "name", None):
+                        team_name = str(t.name)
             except Exception:
-                # Keep dashboard available even if team name lookup fails.
+                pass
+
+            # ── Stats ─────────────────────────────────────────────────────
+            solved_today = 0
+            team_pts = 0
+            team_rank = "—"
+            member_count = 0
+            docker_challenge_count = 0
+            max_active = int(os.getenv("ORCHESTRATOR_TEAM_MAX_ACTIVE", 10))
+
+            if team_id and str(team_id).isdigit():
+                tid = int(team_id)
+                try:
+                    today_start = datetime.utcnow().replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    )
+                    solved_today = Solves.query.filter(
+                        Solves.team_id == tid,
+                        Solves.date >= today_start,
+                    ).count()
+                except Exception:
+                    pass
+
+                try:
+                    team_pts = (
+                        db.session.query(db.func.sum(Challenges.value))
+                        .join(Solves, Solves.challenge_id == Challenges.id)
+                        .filter(Solves.team_id == tid)
+                        .scalar()
+                        or 0
+                    )
+                except Exception:
+                    pass
+
+                try:
+                    t_obj = Teams.query.get(tid)
+                    if t_obj and hasattr(t_obj, "members"):
+                        member_count = t_obj.members.count()
+                except Exception:
+                    pass
+
+            try:
+                all_challs = Challenges.query.all()
+                docker_challenge_count = sum(
+                    1 for ch in all_challs if self._is_orchestrated_challenge(ch)
+                )
+            except Exception:
                 pass
 
             return render_template_string(
@@ -2299,6 +2156,12 @@ class OrchestrationPlugin:
                 team_name=team_name,
                 initial_message=initial_message,
                 initial_kind=initial_kind,
+                solved_today=solved_today,
+                team_pts=team_pts,
+                team_rank=team_rank,
+                member_count=member_count,
+                docker_challenge_count=docker_challenge_count,
+                max_active=max_active,
             )
 
         @bp.route("/stop-ui", methods=["GET"])
