@@ -1514,17 +1514,8 @@ class OrchestrationPlugin:
 </div>
 """
 
-            hint_block = ""
-            hint_text = str(access_hint.get("hint", "") or "").strip()
-            if hint_text:
-                hint_block = f"""
-<details class=\"method reveal hint\">
-    <summary>Need a nudge? (click to reveal hint)</summary>
-    <div class=\"reveal-body\">
-        <pre>{html.escape(hint_text)}</pre>
-    </div>
-</details>
-"""
+            # Hints are managed via CTFd native hint system (synced from challenge.yml hint1/hint2/hint3)
+            # Players see them on the challenge page with point costs — not duplicated here.
 
 
             status_row = self._find_status_row(str(team_id), challenge.name)
@@ -2057,8 +2048,6 @@ class OrchestrationPlugin:
             <p class=\"note\" id=\"launchDescription\">{html.escape(launch_description)}</p>
 
             {credentials_block}
-
-            {hint_block}
 
             {''.join(method_blocks)}
 

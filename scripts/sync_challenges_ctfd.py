@@ -27,6 +27,11 @@ class ChallengeSpec:
     flag: str
     port: int | None
     connection_info: str = ""
+    hints: list[tuple[str, int]] = None  # [(content, cost_pts), ...]
+
+    def __post_init__(self):
+        if self.hints is None:
+            self.hints = []
 
 
 def extract_first_mapped_host_port(path: Path) -> int | None:
@@ -155,6 +160,18 @@ def build_spec(challenge_dir: Path) -> ChallengeSpec:
     else:
         port = extract_first_mapped_host_port(yml_path)
 
+    # Parse hints (hint1/hint2/hint3 with optional hint1_cost/hint2_cost/hint3_cost)
+    # Default costs: 25 / 50 / 75 pts (configurable per challenge via hintN_cost)
+    hints: list[tuple[str, int]] = []
+    default_costs = [25, 50, 75]
+    for i, key in enumerate(["hint1", "hint2", "hint3"]):
+        text = str(raw.get(key, "")).strip()
+        if not text:
+            continue
+        cost_raw = str(raw.get(f"{key}_cost", "")).strip()
+        cost = int(cost_raw) if cost_raw.isdigit() else default_costs[i]
+        hints.append((text, cost))
+
     if not name:
         raise ValueError(f"Missing 'name' in {yml_path}")
     if not flag:
@@ -172,6 +189,7 @@ def build_spec(challenge_dir: Path) -> ChallengeSpec:
         flag=flag,
         port=port,
         connection_info=connection_info,
+        hints=hints,
     )
 
 
@@ -245,6 +263,39 @@ def upsert_flag(
             api_request(session, "DELETE", base_url, f"/api/v1/flags/{int(extra['id'])}")
     else:
         api_request(session, "POST", base_url, "/api/v1/flags", payload)
+
+
+def upsert_hints(
+    session: requests.Session,
+    base_url: str,
+    challenge_id: int,
+    hints: list[tuple[str, int]],
+    dry_run: bool,
+) -> None:
+    """Sync hints for a challenge. Deletes existing hints then recreates from spec."""
+    if dry_run:
+        for i, (content, cost) in enumerate(hints, 1):
+            print(f"[dry-run] hint {i} for challenge_id={challenge_id}: cost={cost}pts — {content[:60]}")
+        return
+
+    # Fetch existing hints for this challenge and delete them
+    try:
+        existing_data = api_request(
+            session, "GET", base_url, f"/api/v1/hints?challenge_id={challenge_id}"
+        )
+        for h in existing_data.get("data", []):
+            api_request(session, "DELETE", base_url, f"/api/v1/hints/{h['id']}")
+    except Exception:
+        pass  # If listing/deletion fails, attempt creation anyway
+
+    # Create hints in order
+    for content, cost in hints:
+        api_request(session, "POST", base_url, "/api/v1/hints", {
+            "challenge_id": challenge_id,
+            "content": content,
+            "cost": cost,
+            "type": "standard",
+        })
 
 
 def sync_challenge(
@@ -334,6 +385,15 @@ def sync_challenge(
         flag_value=spec.flag,
         dry_run=dry_run,
     )
+
+    if spec.hints:
+        upsert_hints(
+            session=session,
+            base_url=base_url,
+            challenge_id=challenge_id,
+            hints=spec.hints,
+            dry_run=dry_run,
+        )
 
     return action
 
