@@ -306,6 +306,21 @@
       delay: 10
 
 
+    - name: Pre-build all Docker challenge images
+      shell: |
+        set -e
+        find /vagrant/challenges -name docker-compose.yml | while read compose_file; do
+          dir=$(dirname "$compose_file")
+          if grep -q '^  build:' "$compose_file" 2>/dev/null || grep -q '^\s*build:' "$compose_file" 2>/dev/null; then
+            echo "[pre-build] Building $dir"
+            docker compose -f "$compose_file" build --quiet 2>&1 | tail -3 || true
+          fi
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
     - name: Sync OSINT static challenge assets to web root
       command: >
         python3 /vagrant/scripts/sync_osint_static.py

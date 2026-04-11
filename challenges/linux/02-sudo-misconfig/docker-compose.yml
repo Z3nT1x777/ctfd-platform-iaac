@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   sudo-misconfig:
     build: .
+    image: ctf-linux-sudo-misconfig:latest
     container_name: ctf-sudo-misconfig
     ports:
       - "5021:22"

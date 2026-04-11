@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   capabilities:
     build: .
+    image: ctf-linux-capabilities:latest
     container_name: ctf-capabilities
     ports:
       - "5024:22"

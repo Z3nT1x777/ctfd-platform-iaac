@@ -229,7 +229,7 @@ cmd_start() {
   sudo sed -i -E "s/\"[0-9]+:${container_port}\"/\"${port}:${container_port}\"/" "$instance_dir/docker-compose.yml"
   sudo sed -i -E "s/^([[:space:]]*container_name:).*/\1 ${project}_challenge/" "$instance_dir/docker-compose.yml"
 
-  "${docker_compose[@]}" -p "$project" -f "$instance_dir/docker-compose.yml" up -d --build
+  "${docker_compose[@]}" -p "$project" -f "$instance_dir/docker-compose.yml" up -d
 
   local now expires_epoch
   now=$(date +%s)

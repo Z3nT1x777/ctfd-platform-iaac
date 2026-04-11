@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   suid-classic:
     build: .
+    image: ctf-linux-suid-classic:latest
     container_name: ctf-suid-classic
     ports:
       - "5020:22"

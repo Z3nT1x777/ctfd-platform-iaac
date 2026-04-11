@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   cron-wildcard:
     build: .
+    image: ctf-linux-cron-wildcard:latest
     container_name: ctf-cron-wildcard
     ports:
       - "5022:22"

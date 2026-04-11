@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   container-escape:
     build: .
+    image: ctf-linux-container-escape:latest
     container_name: ctf-container-escape
     ports:
       - "5025:22"
