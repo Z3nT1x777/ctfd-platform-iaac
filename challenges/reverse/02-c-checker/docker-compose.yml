@@ -1,0 +1,8 @@
+services:
+  c-checker:
+    build: .
+    image: ctf-reverse-c-checker:latest
+    container_name: ctf-reverse-c-checker
+    ports:
+      - "5050:5000"
+    restart: unless-stopped

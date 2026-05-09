@@ -1,0 +1,18 @@
+name: pcap-http
+category: forensics
+value: 100
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Une capture réseau a été effectuée sur un poste compromis.
+  Un mot de passe a été transmis en clair sur le réseau interne.
+  Analyse le trafic et retrouve les credentials exfiltrés.
+hint1: |
+  Ouvre le fichier avec Wireshark ou tcpdump.
+hint2: |
+  Filtre sur le protocole HTTP. Cherche les requêtes POST.
+hint3: |
+  Dans Wireshark : clic droit sur un paquet HTTP → "Follow TCP Stream" pour voir la conversation complète.
+flag: CTF{wireshark_http_flag_found}
+port: 5041

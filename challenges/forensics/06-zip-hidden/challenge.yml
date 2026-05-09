@@ -1,0 +1,19 @@
+name: zip-hidden
+category: forensics
+value: 250
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un fichier ZIP suspect a été récupéré sur la machine d'un employé.
+  Il semble ne contenir que des documents anodins... mais le format ZIP
+  permet de cacher des données dans des endroits inattendus.
+  Trouve ce qui est dissimulé.
+hint1: |
+  Le format ZIP comporte plusieurs zones de métadonnées : commentaires, champs extra, etc.
+hint2: |
+  Essaie : unzip -v secret.zip ou zipinfo -v secret.zip pour voir les métadonnées complètes.
+hint3: |
+  En Python : zipfile.ZipFile('secret.zip').comment — les commentaires ZIP ne sont pas visibles avec un simple unzip.
+flag: CTF{zip_comment_forensics}
+port: 5045

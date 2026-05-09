@@ -1,0 +1,18 @@
+name: stego-lsb
+category: forensics
+value: 150
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un agent a transmis un message dissimulé dans une photo anodine de paysage.
+  L'image semble normale... mais contient-elle vraiment seulement des pixels ?
+  Retrouve le message caché.
+hint1: |
+  La stéganographie LSB (Least Significant Bit) cache des données dans les bits de poids faible des pixels.
+hint2: |
+  Essaie l'outil StegSolve ou zsteg (Linux). Ou écris un script Python avec Pillow.
+hint3: |
+  Le message est caché dans le bit de poids faible du canal Rouge, pixel par pixel, ligne par ligne. Lis les bits et regroupe-les par 8 (ASCII).
+flag: CTF{lsb_pixels_dont_lie}
+port: 5042

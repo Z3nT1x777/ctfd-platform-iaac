@@ -1,0 +1,24 @@
+name: python-obfusc
+category: reverse
+value: 100
+type: static
+description: |
+  Un script Python a été intentionnellement obfusqué avant d'être déployé.
+  Retrouve le mot de passe qui déverrouille le flag.
+
+  **Fichier à analyser :**
+  ```python
+  _0=print;_1=input;_3=lambda x:bytes.fromhex(x).decode()
+  _4='4354467b'+'657865635f'+'6261736536'+'345f756e70'+'61636b7d'
+  _5=_3(_4)
+  _6=_1("Password: ")
+  if _6==_5:_0("Correct! "+_5)
+  else:_0("Wrong!")
+  ```
+hint1: |
+  Les noms de variables ont été remplacés par _0, _1, etc. Renomme-les pour y voir plus clair.
+hint2: |
+  La fonction _3 convertit une chaîne hexadécimale en texte : bytes.fromhex(x).decode()
+hint3: |
+  Concatène les morceaux de _4 et convertis le hex résultant en ASCII. C'est le password ET le flag.
+flag: CTF{exec_base64_unpack}

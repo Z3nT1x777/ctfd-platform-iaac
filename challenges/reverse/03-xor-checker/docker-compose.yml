@@ -1,0 +1,8 @@
+services:
+  xor-checker:
+    build: .
+    image: ctf-reverse-xor-checker:latest
+    container_name: ctf-reverse-xor-checker
+    ports:
+      - "5051:5000"
+    restart: unless-stopped

@@ -1,0 +1,18 @@
+name: c-checker
+category: reverse
+value: 150
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un binaire Linux vérifie une clé de licence.
+  Télécharge-le, analyse-le et trouve la bonne clé.
+  Outils recommandés : strings, ltrace, Ghidra, gdb.
+hint1: |
+  Commence par la commande 'strings ./crackme' — elle révèle souvent les constantes hardcodées.
+hint2: |
+  ltrace ./crackme te montre les appels aux fonctions de bibliothèque (strcmp, strcpy...) en temps réel.
+hint3: |
+  La clé est construite en concaténant trois tableaux de caractères. Cherche des séquences ASCII dans les sections .rodata du binaire.
+flag: CTF{compare_hardcoded}
+port: 5050

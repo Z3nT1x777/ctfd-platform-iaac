@@ -1,0 +1,18 @@
+name: apache-logs
+category: forensics
+value: 75
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un serveur web interne a été compromis. L'équipe sécurité t'a transmis les logs Apache
+  de la nuit de l'incident. Une donnée sensible a été exfiltrée via une requête HTTP.
+  Retrouve-la.
+hint1: |
+  Cherche une requête inhabituelle parmi les centaines de requêtes normales.
+hint2: |
+  Certains attaquants encodent les données exfiltrées en base64 dans les paramètres d'URL.
+hint3: |
+  Filtre les requêtes POST ou les paramètres contenant des caractères '=' (base64). Décode le résultat.
+flag: CTF{apache_log_never_lies}
+port: 5040
