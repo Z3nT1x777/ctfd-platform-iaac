@@ -2,7 +2,7 @@ name: c-checker
 category: reverse
 value: 150
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Un binaire Linux vérifie une clé de licence.

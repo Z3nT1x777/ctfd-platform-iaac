@@ -2,7 +2,7 @@ name: pcap-dns
 category: forensics
 value: 200
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Un malware a exfiltré des données sensibles en utilisant le protocole DNS comme canal caché.

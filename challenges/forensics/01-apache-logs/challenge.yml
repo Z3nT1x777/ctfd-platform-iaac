@@ -2,7 +2,7 @@ name: apache-logs
 category: forensics
 value: 75
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Un serveur web interne a été compromis. L'équipe sécurité t'a transmis les logs Apache

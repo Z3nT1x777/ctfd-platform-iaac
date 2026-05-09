@@ -85,9 +85,10 @@ def validate_challenge(path: Path, used_ports: Dict[int, Path]) -> List[str]:
             if not (path / filename).exists():
                 errors.append(f"{rel}: missing required file '{filename}' for docker challenge")
 
-        # Web-specific files only required when connection_mode is not ssh
+        # Web-specific files only required for web app challenges.
+        # ssh/ssh_only = interactive shell; download = file-download server (forensics/reverse)
         connection_mode = data.get("connection_mode", "").strip().lower()
-        if connection_mode not in ("ssh", "ssh_only"):
+        if connection_mode not in ("ssh", "ssh_only", "download"):
             for filename in DOCKER_REQUIRED_FILES_WEB:
                 if not (path / filename).exists():
                     errors.append(f"{rel}: missing required file '{filename}' for web docker challenge")

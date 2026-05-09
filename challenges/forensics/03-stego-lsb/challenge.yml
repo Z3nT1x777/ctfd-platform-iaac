@@ -2,7 +2,7 @@ name: stego-lsb
 category: forensics
 value: 150
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Un agent a transmis un message dissimulé dans une photo anodine de paysage.

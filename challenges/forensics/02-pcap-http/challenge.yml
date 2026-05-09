@@ -2,7 +2,7 @@ name: pcap-http
 category: forensics
 value: 100
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Une capture réseau a été effectuée sur un poste compromis.

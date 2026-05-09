@@ -2,7 +2,7 @@ name: xor-checker
 category: reverse
 value: 200
 type: docker
-connection_mode: web
+connection_mode: download
 container_port: 5000
 description: |
   Un binaire Linux valide une clé secrète en appliquant un XOR octet par octet
