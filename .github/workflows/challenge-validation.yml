@@ -50,9 +50,14 @@ jobs:
               continue
             fi
 
-            image_tag="challenge-ci-$(basename "$challenge_dir")"
-            echo "Building $challenge_dir as $image_tag"
-            docker build -t "$image_tag" "$challenge_dir"
+            compose_file="$challenge_dir/docker-compose.yml"
+            echo "Building $challenge_dir"
+            if [ -f "$compose_file" ]; then
+              # Use docker compose so that custom build contexts (context: ..) are respected
+              docker compose -f "$compose_file" build --no-cache
+            else
+              docker build -t "challenge-ci-$(basename "$challenge_dir")" "$challenge_dir"
+            fi
             built=$((built + 1))
           done
 

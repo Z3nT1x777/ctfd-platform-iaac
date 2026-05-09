@@ -1,6 +1,8 @@
 services:
   xor-checker:
-    build: .
+    build:
+      context: ../..
+      dockerfile: reverse/03-xor-checker/Dockerfile
     image: ctf-reverse-xor-checker:latest
     container_name: ctf-reverse-xor-checker
     ports:

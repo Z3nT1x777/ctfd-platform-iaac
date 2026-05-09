@@ -1,6 +1,8 @@
 services:
   pcap-http:
-    build: .
+    build:
+      context: ..
+      dockerfile: 02-pcap-http/Dockerfile
     image: ctf-forensics-pcap-http:latest
     container_name: ctf-forensics-pcap-http
     ports:

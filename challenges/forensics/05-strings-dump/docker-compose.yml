@@ -1,6 +1,8 @@
 services:
   strings-dump:
-    build: .
+    build:
+      context: ..
+      dockerfile: 05-strings-dump/Dockerfile
     image: ctf-forensics-strings-dump:latest
     container_name: ctf-forensics-strings-dump
     ports:

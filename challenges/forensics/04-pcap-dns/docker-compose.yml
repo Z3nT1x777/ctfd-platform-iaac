@@ -1,6 +1,8 @@
 services:
   pcap-dns:
-    build: .
+    build:
+      context: ..
+      dockerfile: 04-pcap-dns/Dockerfile
     image: ctf-forensics-pcap-dns:latest
     container_name: ctf-forensics-pcap-dns
     ports:

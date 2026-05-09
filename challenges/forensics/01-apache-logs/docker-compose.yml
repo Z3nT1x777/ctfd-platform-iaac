@@ -1,6 +1,8 @@
 services:
   apache-logs:
-    build: .
+    build:
+      context: ..
+      dockerfile: 01-apache-logs/Dockerfile
     image: ctf-forensics-apache-logs:latest
     container_name: ctf-forensics-apache-logs
     ports:

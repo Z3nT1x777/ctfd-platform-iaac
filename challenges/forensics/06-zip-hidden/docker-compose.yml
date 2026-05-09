@@ -1,6 +1,8 @@
 services:
   zip-hidden:
-    build: .
+    build:
+      context: ..
+      dockerfile: 06-zip-hidden/Dockerfile
     image: ctf-forensics-zip-hidden:latest
     container_name: ctf-forensics-zip-hidden
     ports:

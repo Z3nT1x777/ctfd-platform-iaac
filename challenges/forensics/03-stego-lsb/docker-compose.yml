@@ -1,6 +1,8 @@
 services:
   stego-lsb:
-    build: .
+    build:
+      context: ..
+      dockerfile: 03-stego-lsb/Dockerfile
     image: ctf-forensics-stego-lsb:latest
     container_name: ctf-forensics-stego-lsb
     ports:
