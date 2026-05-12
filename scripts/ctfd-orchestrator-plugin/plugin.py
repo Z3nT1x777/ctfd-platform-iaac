@@ -117,6 +117,30 @@ function log(msg) {
   el.scrollTop = el.scrollHeight;
 }
 
+function getCSRFToken() {
+  const cookies = document.cookie.split(';').reduce((acc, pair) => {
+    const [name, ...value] = pair.trim().split('=');
+    if (!name) return acc;
+    acc[name] = value.join('=');
+    return acc;
+  }, {});
+  const cookieToken = (
+    cookies['CSRF-Token'] || cookies['X-CSRF-Token'] || cookies['csrf_access_token'] || cookies['XSRF-TOKEN'] || cookies['csrftoken'] || null
+  );
+  const nonce = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : null;
+  return nonce || cookieToken;
+}
+
+function csrfHeaders() {
+  const token = getCSRFToken();
+  return token ? {
+    'X-CSRF-Token': token,
+    'CSRF-Token': token,
+    'X-CSRFToken': token,
+    'X-XSRF-TOKEN': token,
+  } : {};
+}
+
 async function runAction(name) {
   const spinner = document.getElementById("sp-" + name);
   if (spinner) spinner.style.display = "inline-block";
@@ -125,7 +149,7 @@ async function runAction(name) {
   try {
     const res = await fetch(BASE + "/admin/" + name, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: "{}"
     });
     const data = await res.json();
@@ -2235,7 +2259,7 @@ class OrchestrationPlugin:
 
             orch_base = os.getenv(
                 "ORCHESTRATOR_API_URL",
-                os.getenv("ORCHESTRATOR_API_BASE", "http://host.docker.internal:18181"),
+                os.getenv("ORCHESTRATOR_API_BASE", "http://host.docker.internal:8181"),
             ).rstrip("/")
             token = os.getenv("ORCHESTRATOR_API_TOKEN", "")
             url = f"{orch_base}/{subpath}"
@@ -2249,13 +2273,18 @@ class OrchestrationPlugin:
             try:
                 req_obj = urllib.request.Request(url, data=data, headers=headers, method=request.method)
                 with urllib.request.urlopen(req_obj, timeout=90) as resp:
-                    body = json.loads(resp.read())
+                    resp_body = resp.read().decode('utf-8')
+                    try:
+                        body = json.loads(resp_body)
+                    except json.JSONDecodeError:
+                        body = {"ok": False, "error": f"Invalid JSON from orchestrator: {resp_body[:200]}"}
                 return jsonify(body)
             except urllib.error.HTTPError as exc:
+                error_text = exc.read().decode('utf-8') if exc.fp else ""
                 try:
-                    body = json.loads(exc.read())
-                except Exception:
-                    body = {"ok": False, "error": f"HTTP {exc.code}"}
+                    body = json.loads(error_text)
+                except (json.JSONDecodeError, ValueError):
+                    body = {"ok": False, "error": f"HTTP {exc.code}", "details": error_text[:200] if error_text else "No details"}
                 return jsonify(body), exc.code
             except Exception as exc:
                 return jsonify({"ok": False, "error": str(exc)}), 502
