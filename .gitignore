@@ -19,6 +19,7 @@ __pycache__/
 *.retry
 .ansible/
 ansible/vars/vault.yml
+ansible/.vault_pass
 
 # IDE
 .idea/
