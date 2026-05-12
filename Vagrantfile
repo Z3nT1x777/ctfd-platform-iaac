@@ -62,6 +62,7 @@ Vagrant.configure("2") do |config|
     cp -a /vagrant/ansible/. /root/ctf-ansible/
     chmod -R go-w /root/ctf-ansible
 
+    chmod -x /root/ctf-ansible/.vault_pass 2>/dev/null || true
     cd /root/ctf-ansible
     ansible-playbook -i inventory playbooks/main.yml
   SHELL
