@@ -110,6 +110,7 @@ pre#log{background:#0a1120;border:1px solid var(--line);border-radius:8px;paddin
 <script>
 // Proxy route: browser → CTFd plugin → orchestrator (server-side, no token in browser)
 const BASE = "/plugins/orchestrator/admin/proxy";
+const _SERVER_NONCE = "{{ csrf_nonce }}";
 
 function log(msg) {
   const el = document.getElementById("log");
@@ -118,6 +119,7 @@ function log(msg) {
 }
 
 function getCSRFToken() {
+  if (_SERVER_NONCE) return _SERVER_NONCE;
   const cookies = document.cookie.split(';').reduce((acc, pair) => {
     const [name, ...value] = pair.trim().split('=');
     if (!name) return acc;
@@ -2246,7 +2248,17 @@ class OrchestrationPlugin:
             """Orchestrator admin panel — sync, prebuild, kill-all, instance status."""
             if not self._is_admin_user():
                 return "Forbidden — accès réservé aux administrateurs CTFd.", 403
-            return render_template_string(ADMIN_TEMPLATE)
+            nonce = ""
+            try:
+                from flask_wtf.csrf import generate_csrf
+                nonce = generate_csrf()
+            except Exception:
+                try:
+                    from flask import session as _s
+                    nonce = _s.get("nonce", "") or _s.get("_csrf_token", "")
+                except Exception:
+                    pass
+            return render_template_string(ADMIN_TEMPLATE, csrf_nonce=nonce)
 
         @bp.route("/admin/proxy/<path:subpath>", methods=["GET", "POST"])
         @authed_only
