@@ -360,7 +360,7 @@ def sync_challenge(
         challenge_id = int(created["data"]["id"])
         
         # For launch-link mode on new challenges, update with correct button link
-        if connection_mode == "launch-link" and instance_base_url:
+        if connection_mode == "launch-link" and instance_base_url and spec.challenge_type in ["docker", "dynamic"]:
             updated_connection_info = f"{instance_base_url.rstrip('/')}/plugins/orchestrator/launch?challenge_id={challenge_id}"
             api_request(
                 session,

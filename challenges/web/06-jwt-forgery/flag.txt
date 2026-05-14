@@ -1,0 +1,1 @@
+CTF{jwt_weak_secret_cracked}

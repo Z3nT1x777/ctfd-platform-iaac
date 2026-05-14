@@ -1,0 +1,12 @@
+services:
+  zip-hidden:
+    build:
+      context: ..
+      dockerfile: 06-zip-hidden/Dockerfile
+    image: ctf-forensics-zip-hidden:latest
+    container_name: ctf-forensics-zip-hidden
+    ports:
+      - "5045:5000"
+    environment:
+      - FLAG=CTF{zip_comment_forensics}
+    restart: unless-stopped

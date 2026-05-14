@@ -1,0 +1,10 @@
+services:
+  xor-checker:
+    build:
+      context: ../..
+      dockerfile: reverse/03-xor-checker/Dockerfile
+    image: ctf-reverse-xor-checker:latest
+    container_name: ctf-reverse-xor-checker
+    ports:
+      - "5051:5000"
+    restart: unless-stopped

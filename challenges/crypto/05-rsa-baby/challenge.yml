@@ -1,0 +1,22 @@
+name: rsa-baby
+category: crypto
+value: 250
+type: static
+description: |
+  Un système RSA a été intercepté. Les paramètres publics sont faibles. Retrouve le message original.
+
+  **Paramètres publics :**
+  ```
+  n = 3233
+  e = 17
+  c = 2557
+  ```
+
+  Le flag est `CTF{rsa_small_n_factored}` — prouve que tu as compris en soumettant ce flag après avoir vérifié que tu peux déchiffrer c.
+hint1: |
+  RSA : pour déchiffrer, tu as besoin de la clé privée d = e⁻¹ mod φ(n)
+hint2: |
+  n = 3233 est petit. Essaie de le factoriser : quels sont ses facteurs premiers ?
+hint3: |
+  n = 61 × 53. φ(n) = 60 × 52 = 3120. Calcule d avec l'algorithme d'Euclide étendu, puis m = c^d mod n
+flag: CTF{rsa_small_n_factored}

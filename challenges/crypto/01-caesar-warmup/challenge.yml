@@ -1,0 +1,18 @@
+name: caesar-warmup
+category: crypto
+value: 50
+type: static
+description: |
+  Un message intercepté semble avoir été chiffré avec la méthode favorite d'un célèbre général romain. Déchiffre ce message pour obtenir le flag.
+
+  **Texte chiffré :**
+  ```
+  PGS{whyvhf_pnrfne_fgevxrf_ntnva}
+  ```
+hint1: |
+  Cette technique de chiffrement par substitution est vieille de plus de 2000 ans
+hint2: |
+  Chaque lettre est décalée d'un nombre fixe de positions dans l'alphabet
+hint3: |
+  ROT13 est un cas particulier de ce chiffrement. Essaie dcode.fr ou CyberChef
+flag: CTF{julius_caesar_strikes_again}

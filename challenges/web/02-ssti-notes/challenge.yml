@@ -1,0 +1,18 @@
+name: ssti-notes
+category: web
+value: 150
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Une application de prise de notes personnelles permet de sauvegarder du texte libre.
+  Le moteur de template est un peu trop généreux dans ce qu'il accepte.
+  Trouve comment lui faire révéler le flag.
+hint1: |
+  Le contenu de la note est rendu via un moteur de template côté serveur (Flask/Jinja2).
+hint2: |
+  Essaie d'injecter une expression Jinja2 dans le champ de note : {{7*7}}
+hint3: |
+  Pour lire les variables d'environnement en Jinja2, essaie : {{config.items()}} ou {{request.environ.get('FLAG')}}
+flag: CTF{jinja2_ssti_oops}
+port: 5031

@@ -14,6 +14,8 @@ import json
 import os
 import re
 import time
+import urllib.request
+import urllib.error
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
@@ -29,6 +31,172 @@ from .instance_tracker import InstanceTracker
 from .access_profiles import build_access_methods, load_access_hint_from_dir, normalize_slug
 
 logger = logging.getLogger("ctfd.orchestrator_plugin")
+
+# ── Admin page ─────────────────────────────────────────────────────────────
+ADMIN_TEMPLATE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Orchestrator — Admin</title>
+<style>
+:root{--bg:#070d16;--card:#101a2a;--surface:#0d1624;--fg:#e6edf7;--muted:#8b949e;--ok:#34d399;--bad:#f87171;--warn:#f59e0b;--line:#2a3548;--blue:#2563eb;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;font-size:14px;padding:28px;}
+h1{font-size:1.4rem;margin-bottom:4px;}
+.sub{color:var(--muted);margin-bottom:24px;font-size:13px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px;}
+.action-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.action-card h3{font-size:0.95rem;margin-bottom:6px;}
+.action-card p{color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:14px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-red{background:#7f1d1d;color:#fca5a5;border-color:#991b1b;}
+.btn-orange{background:#78350f;color:#fcd34d;border-color:#92400e;}
+.btn-green{background:#064e3b;color:#6ee7b7;border-color:#065f46;}
+.spinner{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.log-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.log-panel h3{margin-bottom:10px;font-size:0.95rem;}
+pre#log{background:#0a1120;border:1px solid var(--line);border-radius:8px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;min-height:120px;max-height:420px;overflow-y:auto;color:var(--fg);white-space:pre-wrap;word-break:break-all;}
+.instance-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.instance-table th{text-align:left;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line);}
+.instance-table td{padding:6px 10px;border-bottom:1px solid rgba(42,53,72,.5);}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
+.badge-ok{background:rgba(52,211,153,.15);color:var(--ok);}
+.badge-muted{background:rgba(139,148,158,.1);color:var(--muted);}
+#instances-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:24px;}
+</style>
+</head>
+<body>
+<h1>⚙️ Orchestrator — Admin</h1>
+<p class="sub">Actions réservées aux administrateurs CTFd</p>
+
+<div id="instances-section">
+  <h3>📊 Instances actives</h3>
+  <div id="instances-body"><em style="color:var(--muted)">Chargement...</em></div>
+</div>
+
+<div class="grid">
+  <div class="action-card">
+    <h3>🔄 Sync Challenges</h3>
+    <p>Importe ou met à jour tous les challenges depuis le dossier <code>/vagrant/challenges</code> vers CTFd (flags, hints, descriptions).</p>
+    <button class="btn btn-blue" onclick="runAction('sync')">
+      <span class="spinner" id="sp-sync"></span>Lancer la sync
+    </button>
+  </div>
+  <div class="action-card">
+    <h3>🏗️ Pre-build Images</h3>
+    <p>Construit toutes les images Docker des challenges. Indispensable après ajout d'un nouveau challenge pour éviter les timeouts au lancement.</p>
+    <button class="btn btn-green" onclick="runAction('prebuild')">
+      <span class="spinner" id="sp-prebuild"></span>Build all images
+    </button>
+  </div>
+  <div class="action-card">
+    <h3>💀 Kill All Instances</h3>
+    <p>Arrête immédiatement toutes les instances joueurs en cours. Utile pour libérer des ressources ou avant un redémarrage.</p>
+    <button class="btn btn-red" onclick="runAction('kill-all')">
+      <span class="spinner" id="sp-kill-all"></span>Kill all
+    </button>
+  </div>
+</div>
+
+<div class="log-panel">
+  <h3>📋 Log de sortie</h3>
+  <pre id="log">En attente d'une action...</pre>
+</div>
+
+<script>
+// Proxy route: browser → CTFd plugin → orchestrator (server-side, no token in browser)
+const BASE = "/plugins/orchestrator/admin/proxy";
+const _SERVER_NONCE = "{{ csrf_nonce }}";
+
+function log(msg) {
+  const el = document.getElementById("log");
+  el.textContent = msg;
+  el.scrollTop = el.scrollHeight;
+}
+
+function getCSRFToken() {
+  if (_SERVER_NONCE) return _SERVER_NONCE;
+  const cookies = document.cookie.split(';').reduce((acc, pair) => {
+    const [name, ...value] = pair.trim().split('=');
+    if (!name) return acc;
+    acc[name] = value.join('=');
+    return acc;
+  }, {});
+  const cookieToken = (
+    cookies['CSRF-Token'] || cookies['X-CSRF-Token'] || cookies['csrf_access_token'] || cookies['XSRF-TOKEN'] || cookies['csrftoken'] || null
+  );
+  const nonce = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : null;
+  return nonce || cookieToken;
+}
+
+function csrfHeaders() {
+  const token = getCSRFToken();
+  return token ? {
+    'X-CSRF-Token': token,
+    'CSRF-Token': token,
+    'X-CSRFToken': token,
+    'X-XSRF-TOKEN': token,
+  } : {};
+}
+
+async function runAction(name) {
+  const spinner = document.getElementById("sp-" + name);
+  if (spinner) spinner.style.display = "inline-block";
+  document.querySelectorAll(".btn").forEach(b => b.disabled = true);
+  log("⏳ " + name + " en cours...");
+  try {
+    const res = await fetch(BASE + "/admin/" + name, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...csrfHeaders() },
+      body: "{}"
+    });
+    const data = await res.json();
+    let out = JSON.stringify(data, null, 2);
+    if (data.stdout) out = data.stdout + (data.stderr ? "\\n--- stderr ---\\n" + data.stderr : "");
+    if (name === "kill-all") out = "Killed: " + (data.killed || []).join(", ") + (data.errors && data.errors.length ? "\\nErrors: " + data.errors.join(", ") : "");
+    log((data.ok !== false ? "✅ " : "❌ ") + out);
+  } catch(e) {
+    log("❌ Erreur réseau : " + e.message);
+  } finally {
+    if (spinner) spinner.style.display = "none";
+    document.querySelectorAll(".btn").forEach(b => b.disabled = false);
+    refreshInstances();
+  }
+}
+
+async function refreshInstances() {
+  try {
+    const res = await fetch(BASE + "/admin/instances");
+    const data = await res.json();
+    const container = document.getElementById("instances-body");
+    if (!data.ok || !data.instances || data.instances.length === 0) {
+      container.innerHTML = "<em style='color:var(--muted)'>Aucune instance active</em>";
+      return;
+    }
+    let html = "<table class='instance-table'><tr><th>Team</th><th>Challenge</th><th>Port</th><th>TTL restant</th><th>État</th></tr>";
+    data.instances.forEach(function(i) {
+      const ttl = parseInt(i.ttl_remaining_sec || 0);
+      const ttlStr = ttl > 0 ? Math.floor(ttl/60) + "m " + (ttl%60) + "s" : "expiré";
+      const state = i.state || "running";
+      html += "<tr><td>" + (i.team||"-") + "</td><td>" + (i.challenge||"-") + "</td><td>" + (i.port||"-") + "</td><td>" + ttlStr + "</td><td><span class='badge badge-ok'>" + state + "</span></td></tr>";
+    });
+    html += "</table>";
+    container.innerHTML = html;
+  } catch(e) {
+    document.getElementById("instances-body").innerHTML = "<em style='color:var(--bad)'>Erreur de connexion à l'orchestrateur</em>";
+  }
+}
+
+refreshInstances();
+setInterval(refreshInstances, 15000);
+</script>
+</body>
+</html>
+"""
 
 UI_TEMPLATE = """<!doctype html>
 <html lang="en">
@@ -2086,6 +2254,65 @@ class OrchestrationPlugin:
                 )
 
             return redirect(f"/plugins/orchestrator/launch?challenge_id={challenge_id}", code=302)
+
+        @bp.route("/admin", methods=["GET"])
+        @authed_only
+        def admin_panel():
+            """Orchestrator admin panel — sync, prebuild, kill-all, instance status."""
+            if not self._is_admin_user():
+                return "Forbidden — accès réservé aux administrateurs CTFd.", 403
+            nonce = ""
+            try:
+                from flask_wtf.csrf import generate_csrf
+                nonce = generate_csrf()
+            except Exception:
+                try:
+                    from flask import session as _s
+                    nonce = _s.get("nonce", "") or _s.get("_csrf_token", "")
+                except Exception:
+                    pass
+            return render_template_string(ADMIN_TEMPLATE, csrf_nonce=nonce)
+
+        @bp.route("/admin/proxy/<path:subpath>", methods=["GET", "POST"])
+        @authed_only
+        def admin_proxy(subpath):
+            """Server-side proxy: browser → CTFd plugin → orchestrator.
+            Keeps the orchestrator token off the browser and avoids host.docker.internal DNS
+            issues on client machines."""
+            if not self._is_admin_user():
+                return jsonify({"ok": False, "error": "Forbidden"}), 403
+
+            orch_base = os.getenv(
+                "ORCHESTRATOR_API_URL",
+                os.getenv("ORCHESTRATOR_API_BASE", "http://host.docker.internal:8181"),
+            ).rstrip("/")
+            token = os.getenv("ORCHESTRATOR_API_TOKEN", "")
+            url = f"{orch_base}/{subpath}"
+
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            }
+            data = b"{}" if request.method == "POST" else None
+
+            try:
+                req_obj = urllib.request.Request(url, data=data, headers=headers, method=request.method)
+                with urllib.request.urlopen(req_obj, timeout=90) as resp:
+                    resp_body = resp.read().decode('utf-8')
+                    try:
+                        body = json.loads(resp_body)
+                    except json.JSONDecodeError:
+                        body = {"ok": False, "error": f"Invalid JSON from orchestrator: {resp_body[:200]}"}
+                return jsonify(body)
+            except urllib.error.HTTPError as exc:
+                error_text = exc.read().decode('utf-8') if exc.fp else ""
+                try:
+                    body = json.loads(error_text)
+                except (json.JSONDecodeError, ValueError):
+                    body = {"ok": False, "error": f"HTTP {exc.code}", "details": error_text[:200] if error_text else "No details"}
+                return jsonify(body), exc.code
+            except Exception as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 502
 
         @bp.route("/ui", methods=["GET"])
         @authed_only

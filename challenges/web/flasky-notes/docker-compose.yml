@@ -1,9 +1,0 @@
-version: "3.8"
-
-services:
-  challenge:
-    build: .
-    container_name: web-flasky-notes
-    ports:
-      - "5002:5000"
-    restart: unless-stopped

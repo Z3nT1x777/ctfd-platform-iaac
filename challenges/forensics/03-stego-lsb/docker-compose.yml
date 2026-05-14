@@ -1,0 +1,12 @@
+services:
+  stego-lsb:
+    build:
+      context: ..
+      dockerfile: 03-stego-lsb/Dockerfile
+    image: ctf-forensics-stego-lsb:latest
+    container_name: ctf-forensics-stego-lsb
+    ports:
+      - "5042:5000"
+    environment:
+      - FLAG=CTF{lsb_pixels_dont_lie}
+    restart: unless-stopped

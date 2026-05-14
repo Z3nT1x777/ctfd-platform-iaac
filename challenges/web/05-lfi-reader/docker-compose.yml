@@ -1,0 +1,10 @@
+services:
+  lfi-reader:
+    build: .
+    image: ctf-web-lfi-reader:latest
+    container_name: ctf-web-lfi-reader
+    ports:
+      - "5034:5000"
+    environment:
+      - FLAG=CTF{lfi_path_traversal_to_root}
+    restart: unless-stopped

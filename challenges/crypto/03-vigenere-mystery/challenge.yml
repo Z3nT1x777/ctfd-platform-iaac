@@ -1,0 +1,20 @@
+name: vigenere-mystery
+category: crypto
+value: 150
+type: static
+description: |
+  Un espion a chiffré son message avec un chiffrement polyalphabétique. La longueur de la clé est connue : 3 caractères. Retrouve le flag.
+
+  **Texte chiffré :**
+  ```
+  MXD{fmeorcbi_nypwkpnrezoxgm_ggzlcb}
+  ```
+
+  *Longueur de la clé : 3 caractères*
+hint1: |
+  Le chiffrement de Vigenère utilise un mot-clé pour appliquer plusieurs décalages César
+hint2: |
+  La clé est en majuscules et fait 3 caractères. Essaie des mots simples.
+hint3: |
+  La clé est 'KEY'. Utilise CyberChef → Vigenère Decode avec la clé KEY
+flag: CTF{vigenere_polyalphabetic_cipher}

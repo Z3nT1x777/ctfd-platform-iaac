@@ -32,6 +32,16 @@ CTFD_WEBHOOK_TOKEN = os.environ.get("ORCHESTRATOR_CTFD_WEBHOOK_TOKEN", "")
 SIGNATURE_TTL_SEC = int(os.environ.get("ORCHESTRATOR_SIGNATURE_TTL_SEC", "300"))
 UI_REQUIRE_TOKEN = os.environ.get("ORCHESTRATOR_UI_REQUIRE_TOKEN", "1") == "1"
 
+# Admin operations
+CHALLENGES_ROOT = os.environ.get("ORCHESTRATOR_CHALLENGES_ROOT", "/vagrant/challenges")
+SYNC_SCRIPT = os.environ.get("ORCHESTRATOR_SYNC_SCRIPT", "/vagrant/scripts/sync_challenges_ctfd.py")
+CTFD_BASE_URL = os.environ.get("ORCHESTRATOR_CTFD_BASE_URL", "http://localhost:8000")
+CTFD_API_TOKEN = os.environ.get("ORCHESTRATOR_CTFD_API_TOKEN", "")
+
+# Rate-limit state persistence
+RATE_STATE_PATH = os.environ.get("ORCHESTRATOR_RATE_STATE_PATH", "/var/lib/ctf/rate_state.json")
+_rate_persist_lock = threading.Lock()
+
 # Prometheus metrics (no-op if prometheus_client not installed)
 if _PROM_AVAILABLE:
     _prom_requests = Counter(
@@ -189,8 +199,132 @@ def write_audit(event: str, **fields: object) -> None:
             with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as handle:
                 handle.write(json.dumps(record, ensure_ascii=True) + "\n")
         except OSError:
-            # Keep API responsive even if log file is unavailable.
             pass
+
+
+# ── Rate-limit persistence ──────────────────────────────────────────────────
+
+def _persist_rate_state() -> None:
+    """Dump rate buckets to disk so limits survive service restarts."""
+    try:
+        Path(RATE_STATE_PATH).parent.mkdir(parents=True, exist_ok=True)
+        now = time.time()
+        window = now - 60.0
+        with _rate_persist_lock:
+            snapshot = {
+                "ts": now,
+                "client": {k: [t for t in v if t > window] for k, v in _rate_state.items()},
+                "team": {k: [t for t in v if t > window] for k, v in _team_rate_state.items()},
+            }
+        with open(RATE_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(snapshot, f)
+    except OSError:
+        pass
+
+
+def _load_rate_state() -> None:
+    """Restore rate buckets from disk on startup."""
+    try:
+        with open(RATE_STATE_PATH, encoding="utf-8") as f:
+            snapshot = json.load(f)
+        now = time.time()
+        window = now - 60.0
+        with _rate_lock:
+            for k, times in snapshot.get("client", {}).items():
+                valid = [t for t in times if t > window]
+                if valid:
+                    _rate_state[k] = collections.deque(valid)
+        with _team_rate_lock:
+            for k, times in snapshot.get("team", {}).items():
+                valid = [t for t in times if t > window]
+                if valid:
+                    _team_rate_state[k] = collections.deque(valid)
+    except (OSError, json.JSONDecodeError, KeyError):
+        pass
+
+
+def _rate_persist_worker() -> None:
+    """Background thread: flush rate state to disk every 30 s."""
+    while True:
+        time.sleep(30)
+        _persist_rate_state()
+
+
+# ── Admin helpers ───────────────────────────────────────────────────────────
+
+def admin_list_instances() -> dict:
+    """Return all active instances as structured JSON."""
+    code, out, err = run_manager(["status"])
+    if code != 0:
+        return {"ok": False, "error": err, "instances": []}
+    rows = parse_status_lines(out)
+    return {"ok": True, "instances": rows, "count": len(rows)}
+
+
+def admin_kill_all() -> dict:
+    """Stop every running instance."""
+    code, out, err = run_manager(["status"])
+    if code != 0:
+        return {"ok": False, "error": f"status failed: {err}"}
+    rows = parse_status_lines(out)
+    killed, errors = [], []
+    for row in rows:
+        team = row.get("team", "")
+        challenge = row.get("challenge", "")
+        if not team or not challenge:
+            continue
+        rc, _, rerr = run_manager(["stop", "--challenge", challenge, "--team", team])
+        if rc == 0:
+            killed.append(f"{team}/{challenge}")
+        else:
+            errors.append(f"{team}/{challenge}: {rerr}")
+    return {"ok": True, "killed": killed, "errors": errors}
+
+
+def admin_sync_challenges() -> dict:
+    """Run sync_challenges_ctfd.py against CTFd."""
+    if not CTFD_API_TOKEN:
+        return {"ok": False, "error": "ORCHESTRATOR_CTFD_API_TOKEN not set"}
+    cmd = [
+        "python3", SYNC_SCRIPT,
+        "--ctfd-url", CTFD_BASE_URL,
+        "--api-token", CTFD_API_TOKEN,
+        "--challenges-root", CHALLENGES_ROOT,
+        "--instance-base-url", f"http://{API_BIND}",
+        "--connection-mode", "launch-link",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return {"ok": proc.returncode == 0, "stdout": proc.stdout[-4000:], "stderr": proc.stderr[-1000:]}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "sync timed out after 120s"}
+    except OSError as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def admin_prebuild_images() -> dict:
+    """Build all Docker images found under CHALLENGES_ROOT."""
+    results = []
+    for compose_file in Path(CHALLENGES_ROOT).rglob("docker-compose.yml"):
+        folder = compose_file.parent
+        # Only build if there's an explicit build: stanza
+        try:
+            content = compose_file.read_text(encoding="utf-8")
+            if "build:" not in content:
+                continue
+        except OSError:
+            continue
+        proc = subprocess.run(
+            ["docker", "compose", "-f", str(compose_file), "build", "--no-cache"],
+            capture_output=True, text=True, cwd=str(folder), timeout=600,
+        )
+        results.append({
+            "challenge": folder.name,
+            "ok": proc.returncode == 0,
+            "stderr": proc.stderr[-500:] if proc.returncode != 0 else "",
+        })
+    built = sum(1 for r in results if r["ok"])
+    return {"ok": True, "built": built, "total": len(results), "results": results}
 
 
 UI_HTML = """<!doctype html>
@@ -480,6 +614,12 @@ class Handler(BaseHTTPRequestHandler):
             self._json_response(http_status, payload)
             return
 
+        if path == "/admin/instances":
+            payload = admin_list_instances()
+            self._audit_http("admin_instances", 200, path)
+            self._json_response(200, payload)
+            return
+
         self._json_response(404, {"error": "not found"})
 
     def _execute_action(self, path: str, data: dict) -> tuple[int, dict]:
@@ -600,6 +740,27 @@ class Handler(BaseHTTPRequestHandler):
             self._json_response(401, {"ok": False, "error": "unauthorized"})
             return
 
+        # Admin actions — token auth only, no signature required (internal admin use)
+        if path == "/admin/kill-all":
+            payload = admin_kill_all()
+            self._audit_http("admin_kill_all", 200, path)
+            _persist_rate_state()
+            self._json_response(200, payload)
+            return
+
+        if path == "/admin/sync":
+            payload = admin_sync_challenges()
+            self._audit_http("admin_sync", 200 if payload.get("ok") else 500, path)
+            self._json_response(200 if payload.get("ok") else 500, payload)
+            return
+
+        if path == "/admin/prebuild":
+            payload = admin_prebuild_images()
+            self._audit_http("admin_prebuild", 200, path)
+            self._json_response(200, payload)
+            return
+
+        # Player-facing routes require signature verification
         signature_ok, signature_reason = self._signature_valid(raw_body)
         if not signature_ok:
             self._audit_http("signature_rejected", 401, path, team=team, challenge=challenge, detail=signature_reason)
@@ -628,6 +789,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    _load_rate_state()
+    # Background thread: persist rate-limit state every 30 s
+    t = threading.Thread(target=_rate_persist_worker, daemon=True)
+    t.start()
     server = HTTPServer((API_BIND, API_PORT), Handler)
     server.serve_forever()
 

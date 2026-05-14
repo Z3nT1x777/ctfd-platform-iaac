@@ -1,0 +1,12 @@
+services:
+  apache-logs:
+    build:
+      context: ..
+      dockerfile: 01-apache-logs/Dockerfile
+    image: ctf-forensics-apache-logs:latest
+    container_name: ctf-forensics-apache-logs
+    ports:
+      - "5040:5000"
+    environment:
+      - FLAG=CTF{apache_log_never_lies}
+    restart: unless-stopped

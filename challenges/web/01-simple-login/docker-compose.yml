@@ -1,0 +1,10 @@
+services:
+  simple-login:
+    build: .
+    image: ctf-web-simple-login:latest
+    container_name: ctf-web-simple-login
+    ports:
+      - "5030:5000"
+    environment:
+      - FLAG=CTF{default_creds_are_dangerous}
+    restart: unless-stopped

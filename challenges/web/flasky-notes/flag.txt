@@ -1,1 +1,0 @@
-CTF{flask_ssti_is_fun}

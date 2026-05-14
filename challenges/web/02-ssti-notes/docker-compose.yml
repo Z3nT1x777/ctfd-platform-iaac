@@ -1,0 +1,10 @@
+services:
+  ssti-notes:
+    build: .
+    image: ctf-web-ssti-notes:latest
+    container_name: ctf-web-ssti-notes
+    ports:
+      - "5031:5000"
+    environment:
+      - FLAG=CTF{jinja2_ssti_oops}
+    restart: unless-stopped

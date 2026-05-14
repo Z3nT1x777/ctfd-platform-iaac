@@ -1,0 +1,18 @@
+name: idor-profile
+category: web
+value: 200
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un réseau social minimaliste permet de consulter des profils utilisateurs.
+  Ton compte est créé automatiquement à ta première visite.
+  Mais peut-on vraiment accéder UNIQUEMENT à son propre profil ?
+hint1: |
+  Regarde attentivement l'URL quand tu consultes ton profil.
+hint2: |
+  L'identifiant utilisateur dans l'URL n'est pas validé côté serveur.
+hint3: |
+  L'admin a un ID très bas (essaie 1 ou 2). Modifie le paramètre ?user_id= dans l'URL.
+flag: CTF{idor_user_enumeration_owned}
+port: 5033

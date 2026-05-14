@@ -1,0 +1,18 @@
+name: pcap-dns
+category: forensics
+value: 200
+type: docker
+connection_mode: download
+container_port: 5000
+description: |
+  Un malware a exfiltré des données sensibles en utilisant le protocole DNS comme canal caché.
+  La capture réseau montre un comportement DNS anormal.
+  Reconstitue le message exfiltré.
+hint1: |
+  Ouvre le fichier dans Wireshark et filtre : dns
+hint2: |
+  Les données ont été encodées et découpées dans les noms de domaines des requêtes DNS. Observe les sous-domaines vers *.exfil.ctf.local
+hint3: |
+  Extrais les sous-domaines dans l'ordre, concatène-les, puis décode le résultat en base32 (Python : base64.b32decode(...)).
+flag: CTF{dns_tunnel_data_exfil}
+port: 5043

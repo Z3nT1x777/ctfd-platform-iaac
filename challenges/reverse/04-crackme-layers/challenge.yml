@@ -1,0 +1,43 @@
+name: crackme-layers
+category: reverse
+value: 250
+type: static
+description: |
+  Ce crackme Python applique trois transformations successives sur la clé entrée.
+  Analyse chaque couche et remonte jusqu'au flag original.
+
+  **Fichier à analyser :**
+  ```python
+  import base64
+
+  def layer1(s):
+      return base64.b64encode(s.encode()).decode()
+
+  def layer2(s):
+      return ''.join(chr(ord(c) ^ 0x0F) for c in s)
+
+  def layer3(s):
+      return s[::-1]
+
+  # Expected result after layer3(layer2(layer1(input)))
+  TARGET = "6]XU|YXUx6>lvYXjgw=WcYbl`]<jH]>^"
+
+  key = input("Key: ")
+  if layer3(layer2(layer1(key))) == TARGET:
+      print("Bravo! Flag:", key)
+  else:
+      print("Nope.")
+  ```
+hint1: |
+  Applique les transformations dans l'ordre inverse : layer3 est un reverse(),
+  layer2 est un XOR (sa propre inverse), layer1 est un base64 decode.
+hint2: |
+  En Python :
+  import base64
+  TARGET = "6]XU|YXUx6>lvYXjgw=WcYbl`]<jH]>^"
+  s = TARGET[::-1]
+  s = ''.join(chr(ord(c)^0x0F) for c in s)
+  print(base64.b64decode(s).decode())
+hint3: |
+  Le flag commence par CTF{ et se termine par }. La bonne réponse est le flag lui-même.
+flag: CTF{three_layers_peeled}

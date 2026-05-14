@@ -1,0 +1,10 @@
+services:
+  jwt-forgery:
+    build: .
+    image: ctf-web-jwt-forgery:latest
+    container_name: ctf-web-jwt-forgery
+    ports:
+      - "5035:5000"
+    environment:
+      - FLAG=CTF{jwt_weak_secret_cracked}
+    restart: unless-stopped

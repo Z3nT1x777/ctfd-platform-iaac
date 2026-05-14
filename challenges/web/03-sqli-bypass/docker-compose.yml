@@ -1,0 +1,10 @@
+services:
+  sqli-bypass:
+    build: .
+    image: ctf-web-sqli-bypass:latest
+    container_name: ctf-web-sqli-bypass
+    ports:
+      - "5032:5000"
+    environment:
+      - FLAG=CTF{sqli_auth_bypass_union_select}
+    restart: unless-stopped

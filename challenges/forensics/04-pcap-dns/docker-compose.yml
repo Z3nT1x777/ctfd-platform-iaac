@@ -1,0 +1,12 @@
+services:
+  pcap-dns:
+    build:
+      context: ..
+      dockerfile: 04-pcap-dns/Dockerfile
+    image: ctf-forensics-pcap-dns:latest
+    container_name: ctf-forensics-pcap-dns
+    ports:
+      - "5043:5000"
+    environment:
+      - FLAG=CTF{dns_tunnel_data_exfil}
+    restart: unless-stopped

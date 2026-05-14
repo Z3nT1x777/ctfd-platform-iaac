@@ -1,0 +1,20 @@
+name: hash-invasion
+category: crypto
+value: 150
+type: static
+description: |
+  Un hash MD5 a été intercepté. Retrouve le mot de passe original qui a généré ce hash.
+
+  **Hash MD5 :**
+  ```
+  0571749e2ac330a7455809c6b0e7af90
+  ```
+
+  Une fois le mot trouvé, soumets le flag sous la forme `CTF{mot_trouvé}`
+hint1: |
+  MD5 est une fonction de hachage, pas un chiffrement — elle n'est pas réversible directement
+hint2: |
+  Mais les mots de passe courants sont dans des tables arc-en-ciel (rainbow tables)
+hint3: |
+  Essaie crackstation.net ou cmd5.org — c'est un mot du dictionnaire anglais très commun
+flag: CTF{sunshine}

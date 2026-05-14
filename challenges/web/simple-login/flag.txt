@@ -1,1 +1,0 @@
-CTF{Authentification_B4sique_CTF}

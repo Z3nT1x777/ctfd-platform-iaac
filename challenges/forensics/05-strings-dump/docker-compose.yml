@@ -1,0 +1,12 @@
+services:
+  strings-dump:
+    build:
+      context: ..
+      dockerfile: 05-strings-dump/Dockerfile
+    image: ctf-forensics-strings-dump:latest
+    container_name: ctf-forensics-strings-dump
+    ports:
+      - "5044:5000"
+    environment:
+      - FLAG=CTF{strings_memdump_analysis}
+    restart: unless-stopped

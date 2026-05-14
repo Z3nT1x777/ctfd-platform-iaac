@@ -1,0 +1,18 @@
+name: sqli-bypass
+category: web
+value: 150
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un portail d'authentification d'entreprise protège des données sensibles.
+  La requête SQL de vérification des credentials n'est pas préparée correctement.
+  Bypass l'authentification pour récupérer le flag admin.
+hint1: |
+  Le formulaire de login passe directement les entrées à une requête SQL sans nettoyage.
+hint2: |
+  Que se passe-t-il si tu mets une apostrophe dans le champ username ?
+hint3: |
+  Essaie dans le champ username : admin'-- ou bien ' OR '1'='1
+flag: CTF{sqli_auth_bypass_union_select}
+port: 5032

@@ -1,0 +1,18 @@
+name: simple-login
+category: web
+value: 75
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un panneau d'administration expose une interface de connexion.
+  Les développeurs pressés laissent parfois des credentials par défaut en place.
+  Trouve le bon couple login/password pour accéder au flag.
+hint1: |
+  Certains admins ne changent jamais les mots de passe par défaut...
+hint2: |
+  Essaie les combinaisons classiques : admin/admin, admin/password, root/root
+hint3: |
+  Le code source mentionne un utilisateur 'admin'. Son mot de passe est dans le top 10 des passwords les plus utilisés.
+flag: CTF{default_creds_are_dangerous}
+port: 5030

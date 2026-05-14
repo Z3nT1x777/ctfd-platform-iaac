@@ -1,0 +1,20 @@
+name: xor-checker
+category: reverse
+value: 200
+type: docker
+connection_mode: download
+container_port: 5000
+description: |
+  Un binaire Linux valide une clé secrète en appliquant un XOR octet par octet
+  avec un masque interne répété.
+  Télécharge le binaire, analyse-le et retrouve la clé originale.
+  Outils recommandés : Ghidra, radare2, gdb, Python.
+hint1: |
+  Cherche dans Ghidra une boucle qui XOR chaque octet de l'entrée avec un tableau de constantes.
+hint2: |
+  Le masque répété fait 4 octets. Si tu trouves le tableau `expected[]` et le masque,
+  tu peux reconstruire le flag en Python : bytes([e ^ mask[i%4] for i,e in enumerate(expected)]).decode()
+hint3: |
+  Le masque est la chaîne ASCII "BLUE" (0x42 0x4C 0x55 0x45).
+flag: CTF{xor_repeating_key_weak}
+port: 5051

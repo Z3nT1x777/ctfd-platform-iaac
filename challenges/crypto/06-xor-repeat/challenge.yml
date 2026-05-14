@@ -1,0 +1,20 @@
+name: xor-repeat
+category: crypto
+value: 300
+type: static
+description: |
+  Un message a été chiffré avec un XOR à clé répétée. La longueur de la clé est 4 octets. Le ciphertext est en hexadécimal.
+
+  **Ciphertext (hex) :**
+  ```
+  01 18 13 3e 3a 23 27 1a 30 29 25 20 23 38 3c 2b 25 13 3e 20 3b 13 22 20 23 27 28
+  ```
+
+  *Longueur de la clé : 4 octets*
+hint1: |
+  XOR est réversible : plaintext XOR key = cipher, donc cipher XOR key = plaintext
+hint2: |
+  Avec une clé répétée de longueur 4, les octets en position 0,4,8,... sont tous XORés avec le même octet
+hint3: |
+  Tu connais le début du flag : 'CTF{'. Utilise cette connaissance pour retrouver la clé : key[i] = cipher[i] XOR plaintext[i] pour i in 0..3
+flag: CTF{xor_repeating_key_weak}

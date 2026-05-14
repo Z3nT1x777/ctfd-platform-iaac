@@ -360,10 +360,78 @@
       debug:
         msg: "{{ challenges_sync_result.stdout_lines | default(['(skipped — set ctfd_api_token in vault.yml)']) }}"
 
+    # ── Vault warning ──────────────────────────────────────────────────────
+    - name: Warn about default secrets (non-production)
+      debug:
+        msg: |
+          ⚠️  ATTENTION — Des secrets par défaut sont détectés :
+          {% if orchestrator_api_token_effective == 'ChangeMe-Orchestrator-Token' %}  - orchestrator_api_token est 'ChangeMe-*' → définir dans ansible/vars/vault.yml{% endif %}
+          {% if db_password_effective == 'ctf_secure_password' or db_password_effective == 'REPLACE_ME' %}  - DB_PASSWORD est la valeur par défaut{% endif %}
+          {% if grafana_admin_password_effective == 'admin' %}  - grafana_admin_password est 'admin'{% endif %}
+          Copier ansible/vars/vault.example.yml → vault.yml et renseigner des vraies valeurs avant un CTF public.
+      when: >-
+        orchestrator_api_token_effective == 'ChangeMe-Orchestrator-Token' or
+        grafana_admin_password_effective == 'admin' or
+        db_password_effective == 'ctf_secure_password'
+
+    # ── Log rotation ───────────────────────────────────────────────────────
+    - name: Install logrotate config for orchestrator logs
+      copy:
+        dest: /etc/logrotate.d/ctf-orchestrator
+        content: |
+          /var/log/ctf/*.log {
+              daily
+              rotate 14
+              compress
+              delaycompress
+              missingok
+              notifempty
+              create 0640 root root
+              postrotate
+                  systemctl restart player-instance-api 2>/dev/null || true
+              endscript
+          }
+        mode: "0644"
+
+    - name: Create CTF log and state directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /var/log/ctf
+        - /var/lib/ctf
+
+    # ── Daily backup CTFd DB ───────────────────────────────────────────────
+    - name: Install CTFd DB backup script
+      copy:
+        dest: /usr/local/bin/ctfd-backup.sh
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          set -euo pipefail
+          BACKUP_DIR="/var/backups/ctfd"
+          mkdir -p "$BACKUP_DIR"
+          FILENAME="ctfd-$(date +%Y%m%d-%H%M%S).sql.gz"
+          docker exec ctfd-db mysqldump -u ctfd -p"{{ db_password_effective }}" ctfd 2>/dev/null \
+            | gzip > "$BACKUP_DIR/$FILENAME"
+          # Keep last 14 backups
+          ls -t "$BACKUP_DIR"/*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm --
+          echo "Backup OK: $BACKUP_DIR/$FILENAME"
+
+    - name: Schedule daily CTFd DB backup (cron)
+      cron:
+        name: "CTFd daily backup"
+        minute: "30"
+        hour: "3"
+        job: "/usr/local/bin/ctfd-backup.sh >> /var/log/ctf/backup.log 2>&1"
+        state: present
+
     - name: Success message
       debug:
         msg: >-
           ✅ CTF Platform déployée —
           CTFd: http://{{ ctf_vm_ip }} |
           Orchestrator: http://{{ ctf_vm_ip }}:{{ orchestrator_proxy_listen_port }}/ui |
+          Admin plugin: http://{{ ctf_vm_ip }}/plugins/orchestrator/admin |
           OSINT: http://{{ ctf_vm_ip }}/osint/

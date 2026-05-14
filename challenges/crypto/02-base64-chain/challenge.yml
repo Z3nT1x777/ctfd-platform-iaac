@@ -1,0 +1,18 @@
+name: base64-chain
+category: crypto
+value: 75
+type: static
+description: |
+  Un développeur convaincu que base64 = chiffrement a protégé son flag. Il a même doublé la mise. Retrouve le flag original.
+
+  **Données encodées :**
+  ```
+  UTFSR2UySmhjMlUyTkY5cGMxOXViM1JmWlc1amNubHdkR2x2Ym4wPQ==
+  ```
+hint1: |
+  Base64 n'est PAS du chiffrement, c'est de l'encodage
+hint2: |
+  Le message a été encodé deux fois avec le même algorithme
+hint3: |
+  Décode en base64, puis décode encore en base64. CyberChef ou Python : base64.b64decode()
+flag: CTF{base64_is_not_encryption}

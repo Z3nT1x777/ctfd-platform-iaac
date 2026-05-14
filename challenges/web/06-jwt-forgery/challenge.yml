@@ -1,0 +1,19 @@
+name: jwt-forgery
+category: web
+value: 300
+type: docker
+connection_mode: web
+container_port: 5000
+description: |
+  Un service d'API utilise des JSON Web Tokens pour l'authentification.
+  Tu as accès à un compte guest. Les tokens sont signés, mais la clé secrète
+  est peut-être moins secrète qu'on ne le croit...
+  Objectif : obtenir un token avec le rôle 'admin' et accéder au flag.
+hint1: |
+  Décode ton JWT sur jwt.io et examine le payload — quel est ton rôle actuel ?
+hint2: |
+  La clé secrète utilisée pour signer les tokens est un mot de passe du dictionnaire commun.
+hint3: |
+  Craque le secret : hashcat -a 0 -m 16500 <token> rockyou.txt — puis forge un token admin avec PyJWT.
+flag: CTF{jwt_weak_secret_cracked}
+port: 5035

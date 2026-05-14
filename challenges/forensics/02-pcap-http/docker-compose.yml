@@ -1,0 +1,12 @@
+services:
+  pcap-http:
+    build:
+      context: ..
+      dockerfile: 02-pcap-http/Dockerfile
+    image: ctf-forensics-pcap-http:latest
+    container_name: ctf-forensics-pcap-http
+    ports:
+      - "5041:5000"
+    environment:
+      - FLAG=CTF{wireshark_http_flag_found}
+    restart: unless-stopped

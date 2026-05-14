@@ -1,0 +1,10 @@
+services:
+  idor-profile:
+    build: .
+    image: ctf-web-idor-profile:latest
+    container_name: ctf-web-idor-profile
+    ports:
+      - "5033:5000"
+    environment:
+      - FLAG=CTF{idor_user_enumeration_owned}
+    restart: unless-stopped
