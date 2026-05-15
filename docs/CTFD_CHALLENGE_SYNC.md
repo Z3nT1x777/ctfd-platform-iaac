@@ -57,6 +57,43 @@ This is fully automatic and requires no manual update.
 
 ---
 
+## Forensics and reverse: static file downloads
+
+For forensics and reverse challenges that serve a downloadable file (no interactive instance needed):
+
+- Set `type: static` in `challenge.yml`
+- Set `connection_info` to the direct download URL
+
+```yaml
+name: apache-logs
+category: forensics
+type: static
+connection_info: http://192.168.56.10/files/forensics/01-apache-logs/access.log
+description: |
+  Analyse les logs Apache et retrouve la donnée exfiltrée.
+flag: CTF{...}
+```
+
+The sync script will push the `connection_info` value directly to CTFd — players see the download link on the challenge card without launching any instance.
+
+**How the files are generated:**
+
+During `vagrant provision`, Ansible builds each challenge's Docker image, runs it, extracts the generated file (pcap, log, binary, etc.) to `/var/www/ctf/files/<category>/<name>/`, then discards the container. nginx serves the directory at `/files/`.
+
+This is idempotent: if the file already exists on disk, the build step is skipped.
+
+**URL pattern:**
+
+```
+http://192.168.56.10/files/<category>/<challenge-name>/<filename>
+```
+
+Examples:
+- `http://192.168.56.10/files/forensics/01-apache-logs/access.log`
+- `http://192.168.56.10/files/reverse/02-c-checker/crackme`
+
+---
+
 ## OSINT static deployment architecture
 
 Les fichiers statiques OSINT sont gérés séparément du sync CTFd API. Deux déclencheurs :

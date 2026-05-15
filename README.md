@@ -12,11 +12,12 @@ Single-repository platform for running a fully automated CTF with per-team Docke
 
 - **Infrastructure** — Reproducible VM via Vagrant + Ansible, fully re-provisionable
 - **Platform** — CTFd on Docker Compose with automated challenge sync
-- **Challenges** — 6 Linux privesc challenges + web/osint/sandbox templates, all with writeups in `/soluce`
+- **Challenges** — 32 challenges across 7 categories (crypto, forensics, linux, osint, reverse, sandbox, web), all with writeups in `/soluce`
 - **Orchestration** — Per-team Docker instances, TTL-based cleanup, SSH/web launch pages
+- **Static serving** — Forensics files and reverse binaries served directly via nginx at `/files/<category>/<name>/` — no instance required
 - **Dashboard** — Custom CTFd plugin with instance cards, live activity, quick launch
 - **Security** — HMAC-SHA256 signing, per-team rate limiting, instance quotas, Ansible Vault
-- **Monitoring** — Prometheus + Grafana + cAdvisor
+- **Monitoring** — Prometheus + Grafana + cAdvisor (Grafana: anonymous Viewer access enabled)
 
 ---
 
@@ -46,9 +47,11 @@ Access points after provisioning:
 |---------|-----|
 | CTFd | http://192.168.56.10 |
 | Orchestrator Dashboard | http://192.168.56.10/plugins/orchestrator/dashboard |
+| Orchestrator Admin | http://192.168.56.10/plugins/orchestrator/admin |
 | Orchestrator API | http://192.168.56.10:8181 |
-| Grafana | http://192.168.56.10:3000 |
+| Grafana | http://192.168.56.10:3000 (anonymous Viewer) |
 | OSINT static challenges | http://192.168.56.10/osint/\<challenge\>/resources/ |
+| Forensics / Reverse files | http://192.168.56.10/files/\<category\>/\<challenge\>/\<file\> |
 
 ---
 
@@ -66,6 +69,8 @@ Access points after provisioning:
    ```
 
 After this, every subsequent `vagrant up` or playbook run will sync challenges automatically.
+
+> **Important:** `ORCHESTRATOR_PUBLIC_URL` (set to `http://192.168.56.10` in `ansible/vars/main.yml`) controls the base URL injected into CTFd challenge launch links. If you change the VM IP, update this variable and re-provision.
 
 ---
 
@@ -180,6 +185,22 @@ These are for organizers and post-CTF disclosure — never exposed to players.
 
 ---
 
+## Challenge Overview
+
+| Category | Count | Type | Access |
+|----------|-------|------|--------|
+| crypto | 6 | static | instructions in CTFd |
+| forensics | 6 | static | download via `/files/forensics/<name>/` |
+| linux | 6 | docker | SSH per-team instance |
+| osint | 2 | static | `/osint/<name>/resources/` |
+| reverse | 4 | 2 static + 2 docker→static | download via `/files/reverse/<name>/` |
+| sandbox | 2 | docker | SSH per-team instance |
+| web | 6 | docker | per-team web instance |
+
+Writeups for all challenges: `/soluce/<category>/<challenge>/README.md`
+
+---
+
 ## Linux Privesc Challenge Series
 
 Six SSH-based challenges with increasing difficulty, all in `challenges/linux/`:
@@ -235,10 +256,13 @@ vagrant ssh -c "cd /vagrant/challenges/linux/01-suid-classic && docker compose b
 │       ├── vault.yml               # Secrets (gitignored, create from vault.example.yml)
 │       └── vault.example.yml       # Template for vault.yml
 ├── challenges/
-│   ├── linux/                      # Linux privesc series (01-06)
-│   ├── web/                        # Web challenges
-│   ├── osint/                      # OSINT challenges (static files)
-│   ├── sandbox/                    # Sandbox/misc challenges
+│   ├── crypto/                     # 6 static crypto challenges (01-06)
+│   ├── forensics/                  # 6 forensics challenges — static file downloads
+│   ├── linux/                      # 6 Linux privesc series (01-06, SSH)
+│   ├── osint/                      # 2 OSINT challenges (static nginx)
+│   ├── reverse/                    # 4 reverse challenges (2 static + 2 file downloads)
+│   ├── sandbox/                    # 2 sandbox challenges (SSH)
+│   ├── web/                        # 6 web challenges (per-team Docker)
 │   └── _templates/                 # Challenge authoring templates
 ├── scripts/
 │   ├── player-instance-api.py      # Orchestrator HTTP API (systemd service)
@@ -246,8 +270,7 @@ vagrant ssh -c "cd /vagrant/challenges/linux/01-suid-classic && docker compose b
 │   ├── sync_challenges_ctfd.py     # Challenge sync script (CTFd API)
 │   ├── sync_osint_static.py        # OSINT static file sync
 │   └── ctfd-orchestrator-plugin/   # CTFd plugin (dashboard, launch pages, API endpoints)
-├── soluce/
-│   └── linux/                      # Writeups for all linux challenges
+├── soluce/                         # Writeups for all challenge categories
 ├── docs/                           # Extended documentation
 └── README.md                       # This file
 ```
