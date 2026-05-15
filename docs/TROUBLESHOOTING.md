@@ -5,7 +5,8 @@
 ```
 Client (outside VM)
     ├── :80  → nginx (ctfd.conf)
-    │              ├── /osint/*  → /var/www/osint/  [static OSINT assets]
+    │              ├── /osint/*  → /var/www/osint/       [static OSINT assets]
+    │              ├── /files/*  → /var/www/ctf/files/   [forensics/reverse downloads]
     │              └── /*        → CTFd (127.0.0.1:8900)
     └── :8181 → nginx (orchestrator-api.conf)
                    └── /*        → orchestrator API (127.0.0.1:18181)
@@ -13,7 +14,7 @@ Client (outside VM)
 ```
 
 Two nginx server blocks run on the VM:
-- **Port 80** (`/etc/nginx/sites-enabled/ctfd.conf`): front-proxy for CTFd + static OSINT serving
+- **Port 80** (`/etc/nginx/sites-enabled/ctfd.conf`): front-proxy for CTFd + static OSINT + static file downloads
 - **Port 8181** (`/etc/nginx/sites-enabled/orchestrator-api.conf`): reverse proxy for the orchestrator API
 
 CTFd binds to **localhost only** (127.0.0.1:8900); the orchestrator API binds to **localhost only** (127.0.0.1:18181).
@@ -80,6 +81,48 @@ vagrant ssh -c "cd /opt/ctf/ctfd && docker compose restart"
 ```bash
 vagrant ssh -c "sudo cat /etc/ctf/orchestrator.env | grep -E 'ORCHESTRATOR_TEAM_(MAX_ACTIVE|CHALLENGE_MAX_ACTIVE|RATE_LIMIT_PER_MIN)'"
 ```
+
+---
+
+## Static File Downloads (Forensics / Reverse)
+
+### Issue: Player gets 404 on `/files/` download link
+
+**Symptoms:** Browser shows 404 when clicking a forensics or reverse download link.
+
+**Check nginx config:**
+```bash
+vagrant ssh -c "sudo nginx -T | grep -A5 '/files/'"
+```
+Expected: `alias /var/www/ctf/files/;`
+
+**Check file exists on disk:**
+```bash
+vagrant ssh -c "ls /var/www/ctf/files/forensics/"
+```
+
+**If files are missing** (provision didn't run the generation step):
+```bash
+# Re-run provision — the `creates:` guard means only missing files are rebuilt
+vagrant provision
+```
+
+**If the directory is missing entirely:**
+```bash
+vagrant ssh -c "sudo mkdir -p /var/www/ctf/files && sudo chown www-data:www-data /var/www/ctf/files"
+vagrant provision
+```
+
+### Issue: Challenge links still show `127.0.0.1` instead of `192.168.56.10`
+
+The `ORCHESTRATOR_PUBLIC_URL` env var controls the base URL injected into CTFd launch links.
+
+```bash
+vagrant ssh -c "sudo grep PUBLIC_URL /etc/ctf/orchestrator.env"
+# Expected: ORCHESTRATOR_PUBLIC_URL=http://192.168.56.10
+```
+
+If missing or wrong, check `ansible/vars/main.yml` → `ctf_vm_ip` and re-provision.
 
 ---
 
