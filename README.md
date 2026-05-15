@@ -201,25 +201,6 @@ Writeups for all challenges: `/soluce/<category>/<challenge>/README.md`
 
 ---
 
-## Linux Privesc Challenge Series
-
-Six SSH-based challenges with increasing difficulty, all in `challenges/linux/`:
-
-| # | Name | Difficulty | Points | Port | Technique |
-|---|------|------------|--------|------|-----------|
-| 01 | suid-classic | Easy | 100 | 5020 | `find` SUID → GTFOBins |
-| 02 | sudo-misconfig | Easy | 150 | 5021 | `sudo vim` → shell escape |
-| 03 | cron-wildcard | Medium | 250 | 5022 | `tar *` wildcard injection |
-| 04 | path-hijack | Medium | 300 | 5023 | Custom SUID binary + PATH |
-| 05 | capabilities | Hard | 400 | 5024 | `python3 cap_setuid+ep` |
-| 06 | container-escape | Hard | 500 | 5025 | Docker socket → host FS |
-
-Credentials: `player` / `player2026`
-
-**Note for container-escape:** The flag lives on the Vagrant VM host at `/opt/ctf-flags/container-escape.txt`. This is created automatically by the Ansible playbook.
-
----
-
 ## Operations Commands
 
 ```bash
