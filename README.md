@@ -81,14 +81,27 @@ After this, every subsequent `vagrant up` or playbook run will sync challenges a
 vagrant provision
 
 # Or via Ansible directly (faster, skips VM setup)
-vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml --ask-vault-pass"
+# Note: Ansible runs from /root/ctf-ansible/ inside the VM (copied from /vagrant/ansible/)
+vagrant ssh -c "sudo bash -c 'cp -a /vagrant/ansible/. /root/ctf-ansible/ && cd /root/ctf-ansible && ansible-playbook -i inventory playbooks/main.yml'"
+
+# With encrypted vault (production):
+vagrant ssh -c "sudo bash -c 'cp -a /vagrant/ansible/. /root/ctf-ansible/ && cd /root/ctf-ansible && ansible-playbook -i inventory playbooks/main.yml --vault-password-file .vault_pass'"
 ```
 
 ---
 
 ## Secrets Setup
 
-Copy the example vault file and fill in your values:
+### Dev / local (fresh clone)
+
+On a fresh `git clone`, `ansible/vars/vault.yml` does not exist (it is gitignored).
+`vagrant up` automatically creates it from `vault.example.yml` so the platform starts with safe dev defaults — no manual step required.
+
+The playbook will print a warning listing which secrets are still at their default values. This is expected for a local dev environment.
+
+### Production
+
+Before running `vagrant up`, create and fill `ansible/vars/vault.yml` with real credentials:
 
 ```bash
 cp ansible/vars/vault.example.yml ansible/vars/vault.yml
@@ -97,19 +110,26 @@ cp ansible/vars/vault.example.yml ansible/vars/vault.yml
 Edit `ansible/vars/vault.yml`:
 
 ```yaml
-DB_ROOT_PASSWORD: "strong-password"
-DB_PASSWORD: "strong-password"
-orchestrator_api_token: "generate: openssl rand -hex 32"
-orchestrator_signing_secret: "generate: openssl rand -hex 32"
-orchestrator_ctfd_webhook_token: "generate: openssl rand -hex 32"
+DB_ROOT_PASSWORD: "$(openssl rand -hex 32)"
+DB_PASSWORD: "$(openssl rand -hex 32)"
+orchestrator_api_token: "$(openssl rand -hex 32)"
+orchestrator_signing_secret: "$(openssl rand -hex 32)"
+orchestrator_ctfd_webhook_token: "$(openssl rand -hex 32)"
 grafana_admin_password: "strong-password"
 ctfd_api_token: ""   # fill after first CTFd setup (see Quick Start)
 ```
 
-To encrypt with Ansible Vault (recommended for production):
+Then encrypt (recommended):
 ```bash
 ansible-vault encrypt ansible/vars/vault.yml
+# Choose a strong passphrase and store it in ansible/.vault_pass (gitignored)
+echo "your-passphrase" > ansible/.vault_pass
+chmod 600 ansible/.vault_pass
 ```
+
+`vagrant up` will automatically detect `ansible/.vault_pass` and pass it to Ansible. The `vault.yml` (encrypted or plain) is synced into the VM via the shared folder.
+
+> **First boot only:** complete the CTFd setup wizard, generate an API token (Admin → Settings → Access Tokens), add it to `ansible/vars/vault.yml` as `ctfd_api_token`, then re-provision to sync challenges.
 
 ---
 
