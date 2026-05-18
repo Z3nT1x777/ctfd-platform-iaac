@@ -62,8 +62,20 @@ Vagrant.configure("2") do |config|
     cp -a /vagrant/ansible/. /root/ctf-ansible/
     chmod -R go-w /root/ctf-ansible
 
-    chmod -x /root/ctf-ansible/.vault_pass 2>/dev/null || true
+    # Dev mode: auto-create vault.yml from example on fresh clone (no real secrets)
+    if [ ! -f /root/ctf-ansible/vars/vault.yml ]; then
+      cp /root/ctf-ansible/vars/vault.example.yml /root/ctf-ansible/vars/vault.yml
+      echo "[INFO] vars/vault.yml created from vault.example.yml — dev defaults active. Edit ansible/vars/vault.yml and re-provision for production."
+    fi
+
+    # Support optional vault password file for encrypted vault.yml (prod)
+    VAULT_ARGS=""
+    if [ -f /root/ctf-ansible/.vault_pass ]; then
+      chmod 600 /root/ctf-ansible/.vault_pass
+      VAULT_ARGS="--vault-password-file /root/ctf-ansible/.vault_pass"
+    fi
+
     cd /root/ctf-ansible
-    ansible-playbook -i inventory playbooks/main.yml
+    ansible-playbook -i inventory playbooks/main.yml $VAULT_ARGS
   SHELL
 end

@@ -31,6 +31,11 @@
         state: present
         executable: pip3
 
+    - name: Initialize vault_overrides to empty dict (fallback when vault.yml absent)
+      set_fact:
+        vault_overrides: {}
+      no_log: true
+
     - name: Load optional vaulted overrides
       include_vars:
         file: ../vars/vault.yml

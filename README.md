@@ -23,15 +23,24 @@ Single-repository platform for running a fully automated CTF with per-team Docke
 
 ## Quick Start
 
-### First boot
+### Prerequisites
+
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads) 7.0+
+- [Vagrant](https://www.vagrantup.com/downloads) 2.4+
+- 8 GB RAM and 4 CPU cores available for the VM
+- ~20 GB free disk space (VM image + Docker images)
+
+---
+
+### First boot (dev / local)
 
 ```bash
-git clone https://github.com/USERNAME/ctfd-platform-custom.git
-cd ctfd-platform-custom
-cp ansible/vars/vault.example.yml ansible/vars/vault.yml
-# Edit vault.yml — fill in passwords and tokens (see Secrets section below)
-vagrant up --provision
+git clone https://github.com/Z3nT1x777/ctfd-platform-iaac.git
+cd ctfd-platform-iaac
+vagrant up
 ```
+
+No vault setup needed for local dev — `vagrant up` automatically creates `ansible/vars/vault.yml` from the example file with safe dev defaults. The playbook will print a warning listing secrets still at default values; this is expected.
 
 `vagrant up` runs the full Ansible playbook automatically:
 - Starts CTFd, MariaDB, Redis, Prometheus, Grafana
@@ -59,16 +68,16 @@ Access points after provisioning:
 
 1. Open http://192.168.56.10 → complete the CTFd setup wizard (admin account + CTF name)
 2. In CTFd: **Admin → Settings → Access Tokens → Generate** — copy the token
-3. Add it to `ansible/vars/vault.yml`:
+3. Add it to `ansible/vars/vault.yml` on your host machine:
    ```yaml
    ctfd_api_token: "your-token-here"
    ```
 4. Re-run the playbook to sync challenges:
    ```bash
-   vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml --ask-vault-pass"
+   vagrant provision
    ```
 
-After this, every subsequent `vagrant up` or playbook run will sync challenges automatically.
+After this, every subsequent `vagrant up` or `vagrant provision` will sync challenges automatically.
 
 > **Important:** `ORCHESTRATOR_PUBLIC_URL` (set to `http://192.168.56.10` in `ansible/vars/main.yml`) controls the base URL injected into CTFd challenge launch links. If you change the VM IP, update this variable and re-provision.
 
@@ -81,35 +90,64 @@ After this, every subsequent `vagrant up` or playbook run will sync challenges a
 vagrant provision
 
 # Or via Ansible directly (faster, skips VM setup)
-vagrant ssh -c "cd /vagrant/ansible && ansible-playbook -i inventory playbooks/main.yml --ask-vault-pass"
+# Note: Ansible runs from /root/ctf-ansible/ inside the VM (copied from /vagrant/ansible/)
+vagrant ssh -c "sudo bash -c 'cp -a /vagrant/ansible/. /root/ctf-ansible/ && cd /root/ctf-ansible && ansible-playbook -i inventory playbooks/main.yml'"
+
+# With encrypted vault (production):
+vagrant ssh -c "sudo bash -c 'cp -a /vagrant/ansible/. /root/ctf-ansible/ && cd /root/ctf-ansible && ansible-playbook -i inventory playbooks/main.yml --vault-password-file .vault_pass'"
 ```
 
 ---
 
 ## Secrets Setup
 
-Copy the example vault file and fill in your values:
+### Dev / local (fresh clone)
+
+On a fresh `git clone`, `ansible/vars/vault.yml` does not exist (it is gitignored).
+`vagrant up` automatically creates it from `vault.example.yml` so the platform starts with safe dev defaults — no manual step required.
+
+The playbook will print a warning listing which secrets are still at their default values. This is expected for a local dev environment.
+
+### Production
+
+Before running `vagrant up`, create and fill `ansible/vars/vault.yml` with real credentials:
 
 ```bash
 cp ansible/vars/vault.example.yml ansible/vars/vault.yml
 ```
 
+Generate strong secrets and paste them into the file:
+
+```bash
+openssl rand -hex 32   # run once per secret — 64-char hex string
+```
+
 Edit `ansible/vars/vault.yml`:
 
 ```yaml
-DB_ROOT_PASSWORD: "strong-password"
-DB_PASSWORD: "strong-password"
-orchestrator_api_token: "generate: openssl rand -hex 32"
-orchestrator_signing_secret: "generate: openssl rand -hex 32"
-orchestrator_ctfd_webhook_token: "generate: openssl rand -hex 32"
-grafana_admin_password: "strong-password"
+DB_ROOT_PASSWORD: "<generated>"
+DB_PASSWORD: "<generated>"
+orchestrator_api_token: "<generated>"
+orchestrator_signing_secret: "<generated>"
+orchestrator_ctfd_webhook_token: "<generated>"
+grafana_admin_password: "<strong-password>"
 ctfd_api_token: ""   # fill after first CTFd setup (see Quick Start)
 ```
 
-To encrypt with Ansible Vault (recommended for production):
+Then encrypt and store the vault password (recommended):
+
 ```bash
 ansible-vault encrypt ansible/vars/vault.yml
+# Store the passphrase in ansible/.vault_pass (gitignored — never commit this file)
+echo "your-passphrase" > ansible/.vault_pass
+chmod 600 ansible/.vault_pass
 ```
+
+`vagrant up` automatically detects `ansible/.vault_pass` and decrypts the vault — no extra flag needed. The `vault.yml` (encrypted or plain) is picked up via the shared folder.
+
+> **Note on `DB_PASSWORD`:** if you change this after the first provision, delete `/opt/ctf/ctfd/db_data/` inside the VM before re-provisioning so MariaDB reinitialises with the new password.
+
+> **First boot only:** complete the CTFd setup wizard, generate an API token (Admin → Settings → Access Tokens), add it to `ansible/vars/vault.yml` as `ctfd_api_token`, then run `vagrant provision` to sync challenges.
 
 ---
 
